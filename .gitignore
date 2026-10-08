@@ -1,0 +1,13 @@
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# Generated from the lask repository by scripts/sync.mjs
+docs/.vitepress/generated/
+docs/public/lask/
+docs/guide/why-lask.md
+docs/guide/installation.md
+docs/guide/_usage.md
+docs/language/
+docs/examples/
+docs/reference/
