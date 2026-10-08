@@ -18,7 +18,7 @@ const BRANCH = process.env.LASK_REF ?? "main";
 const MEDIA = /\.(png|jpe?g|gif|svg|webp|mp4)$/i;
 const SKIP_FILES = new Set(["lask.lock.json", ".gitignore", ".DS_Store"]);
 
-if (!fs.existsSync(path.join(SRC, "lask.cabal"))) {
+if (!fs.existsSync(path.join(SRC, "doc", "spec.md"))) {
   console.error(`sync: ${SRC} is not a lask checkout (set LASK_SRC)`);
   process.exit(1);
 }
