@@ -1,0 +1,11 @@
+{
+    "images": {
+        "#node:24.21.0-bookworm": {
+            "digest": "sha256:3d27e5c11e5786e309ec3e03f93ae536eb36e6e5eb3714d5eb3300a36157add0",
+            "kind": "registry",
+            "ref": "node:24.21.0-bookworm"
+        }
+    },
+    "lock_version": 1,
+    "modules": {}
+}

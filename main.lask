@@ -1,0 +1,92 @@
+// The documentation site, previewed with nothing installed but Lask and
+// Docker: Node and VitePress run in a container, and the pages are
+// generated from a lask checkout mounted into it.
+//
+//   lask sync          # one-time: pulls the Node image
+//   lask run dev       # http://localhost:5173, reloads as you edit
+//   lask run preview   # the production build, http://localhost:4173
+
+// The full Debian image, not -slim: scripts/sync.mjs lists the lask
+// checkout's tracked files with git, which -slim does not carry.
+node_image = #node:24.21.0-bookworm
+
+// node_modules lives in a Docker volume, not in the project directory:
+// esbuild and Rollup install native binaries for the platform they run
+// on, so a node_modules from macOS does not load in Linux, nor the reverse.
+modules_volume = "lask-docs-node-modules:/work/node_modules"
+
+quiet: Map<String> = {
+  "npm_config_update_notifier": "false",
+  "npm_config_fund": "false",
+  "npm_config_audit": "false"
+}
+
+node = runnable(node_image, env = quiet, volumes = [modules_volume])
+
+command { "node", "npm", "npx" } on node
+
+// The same image with a lask checkout mounted read-only at /lask, where
+// scripts/sync.mjs reads it, and the given ports published to the host.
+// The mount is not always passed file-change events, so the dev server
+// polls instead.
+internal site(lask_src: String, publish: Array<String>): Runnable = runnable(node_image,
+  env = merge(quiet, {"LASK_SRC": "/lask", "CHOKIDAR_USEPOLLING": "1"}),
+  volumes = [modules_volume, "#{lask_src}:/lask:ro"],
+  publish = publish
+)
+
+// Docker mounts absolute paths only.
+internal absolute(path: String): String = case {
+  is_absolute_path(path) -> path
+  else -> normalize_path(path_join([get_env("PWD"), path]))
+}
+
+internal default_lask_src(): String = get_env_or("LASK_SRC", "../lask")
+
+// Install the dependencies exactly as package-lock.json pins them, into
+// the node_modules volume. Run it again after package.json changes.
+install() = $ npm ci
+
+internal ensure_installed() = $[node] test -x node_modules/.bin/vitepress || npm ci
+
+// Generate the pages from the lask checkout into docs/, without building.
+//
+// @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+// @example lask run pages --lask-src ~/src/lask
+pages(--lask_src: String = default_lask_src()) = do {
+  ensure_installed()
+  $[site(absolute(lask_src), [])] npm run sync
+}
+
+// The dev server with hot reload, until you stop it.
+//
+// The pages are generated once, at start: after changing the lask
+// checkout, restart it or run `lask run pages` beside it.
+//
+// @param port      The port, on the host and in the container alike.
+// @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+// @example lask run dev --port 8080
+dev(--port: Number = 5173, --lask_src: String = default_lask_src()) = do {
+  ensure_installed()
+  log("open http://localhost:#{port}")
+  $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run dev -- --host 0.0.0.0 --port #{port}
+}
+
+// Build the site into docs/.vitepress/dist, as CI does.
+//
+// @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+build(--lask_src: String = default_lask_src()) = do {
+  ensure_installed()
+  $[site(absolute(lask_src), [])] npm run build
+}
+
+// Build the site, then serve the result until you stop it.
+//
+// @param port      The port, on the host and in the container alike.
+// @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+// @example lask run preview
+preview(--port: Number = 4173, --lask_src: String = default_lask_src()) = do {
+  build(lask_src = lask_src)
+  log("open http://localhost:#{port}")
+  $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run preview -- --host 0.0.0.0 --port #{port}
+}

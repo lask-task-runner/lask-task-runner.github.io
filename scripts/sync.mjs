@@ -266,7 +266,7 @@ const lang = (rel) => {
 // Every tracked source file in a directory, main.lask first. Tracked only,
 // so a local checkout gives the same pages as CI's fresh clone.
 function sourceFiles(dirRel) {
-  const files = execFileSync("git", ["-C", SRC, "ls-files", "-z", "--", dirRel], { encoding: "utf8" })
+  const files = execFileSync("git", ["-c", "safe.directory=*", "-C", SRC, "ls-files", "-z", "--", dirRel], { encoding: "utf8" })
     .split("\0")
     .filter((f) => f && !SKIP_FILES.has(path.posix.basename(f)) && !MEDIA.test(f));
   const main = `${dirRel}/main.lask`;

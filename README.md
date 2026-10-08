@@ -17,14 +17,17 @@ To change one of those, edit it in the lask repository; every generated page's "
 
 ## Develop
 
-With the lask repository checked out next to this one:
+You need Lask and Docker, and the lask repository checked out next to this one. Node and VitePress run in a container ([main.lask](main.lask)):
 
 ```bash
-npm install
-npm run dev                           # sync from ../lask, then serve with hot reload
-LASK_SRC=/path/to/lask npm run dev    # another checkout
-npm run build                         # what CI runs
+lask sync                              # one-time: pulls the Node image
+lask run dev                           # http://localhost:5173, reloads as you edit
+lask run dev --lask-src ~/src/lask     # another checkout (or set LASK_SRC)
+lask run preview                       # the production build, http://localhost:4173
+lask run --help                        # every task
 ```
+
+The pages from the lask checkout are generated when `dev` starts; after changing it, restart `dev` or run `lask run pages` beside it. `node_modules` lives in a Docker volume (`lask-docs-node-modules`), so `lask run install` after `package.json` changes, and `docker volume rm lask-docs-node-modules` to start over.
 
 ## Deploy
 
