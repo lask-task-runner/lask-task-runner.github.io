@@ -32,11 +32,6 @@ jobs:
         with:
           repository: lask-task-runner/lask
           path: lask-src
-          sparse-checkout: |
-            README.md
-            lask.cabal
-            doc
-            example
 
       - uses: actions/setup-node@v6
         with:
