@@ -40,8 +40,18 @@ jobs:
           path: lask-src
           fetch-depth: 0
 
+      # Full history: the module reference is built from the tag that
+      # versions.json names for each version.
+      - name: Check out the lask-module-tools repository
+        uses: actions/checkout@v7
+        with:
+          repository: lask-task-runner/lask-module-tools
+          path: tools-src
+          fetch-depth: 0
+
       # Node and VitePress run in the container main.lask declares, so the
-      # runner needs only Lask and Docker.
+      # runner needs only Lask and Docker. Lask itself also writes the module
+      # reference, from its own help.
       - name: Install Lask
         env:
           LASK_VERSION: v0.8.0
@@ -59,7 +69,7 @@ jobs:
 
       - run: lask check
 
-      - run: lask run build --lask-src lask-src
+      - run: lask run build --lask-src lask-src --tools-src tools-src
 
       - uses: actions/configure-pages@v6
         if: github.event_name != 'pull_request'

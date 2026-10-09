@@ -107,6 +107,15 @@ for (const v of resolved) {
     DOCS_MANIFEST: JSON.stringify(manifest),
   };
   execFileSync("node", ["scripts/sync.mjs"], { cwd: siteDir, env, stdio: "inherit" });
+  // The module reference, from the help lask gave for the module version
+  // this Lask version documents (main.lask dumps it before this runs).
+  if (v.tools && fs.existsSync(path.join(siteDir, "scripts/modules.mjs"))) {
+    execFileSync("node", ["scripts/modules.mjs"], {
+      cwd: siteDir,
+      env: { ...env, MODULE_HELP: path.join(SITE, ".module-help", `tools-${v.tools}`) },
+      stdio: "inherit",
+    });
+  }
   execFileSync(path.join(SITE, "node_modules/.bin/vitepress"), ["build", "docs"], { cwd: siteDir, env, stdio: "inherit" });
 }
 

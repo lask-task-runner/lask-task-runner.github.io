@@ -9,6 +9,7 @@ const manifestPath = new URL("./generated/manifest.json", import.meta.url);
 const manifest: {
   topics: { slug: string; title: string }[];
   projects: { slug: string; title: string }[];
+  migrations?: { slug: string; title: string }[];
 } = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
   : { topics: [], projects: [] };
@@ -36,6 +37,12 @@ const currentVersion = process.env.DOCS_VERSION ?? versionInfo.default;
 const laskEditBranch = process.env.LASK_EDIT_BRANCH ?? "dev";
 // VitePress prefixes links with the base, but not what `head` names.
 const base = process.env.DOCS_BASE ?? "/";
+
+// Written by scripts/modules.mjs from the official modules' help.
+const modulesPath = new URL("./generated/modules.json", import.meta.url);
+const modules: { ref?: string; pages: { slug: string; title: string }[] } = fs.existsSync(modulesPath)
+  ? JSON.parse(fs.readFileSync(modulesPath, "utf8"))
+  : { pages: [] };
 
 // GitHub's heading ids, so links written for the lask repository
 // ("spec.md#112-function-invocation") work here unchanged.
@@ -101,6 +108,7 @@ export default defineConfig({
       { text: "Language", link: "/language/", activeMatch: "^/language/" },
       { text: "Examples", link: "/examples/", activeMatch: "^/examples/" },
       { text: "Reference", link: "/reference/quick-reference", activeMatch: "^/reference/" },
+      ...(modules.pages.length ? [{ text: "Modules", link: "/modules/tools/", activeMatch: "^/modules/" }] : []),
       {
         text: "Links",
         items: [
@@ -128,7 +136,24 @@ export default defineConfig({
             { text: "Installation", link: "/guide/installation" },
           ],
         },
+        ...(manifest.migrations?.length
+          ? [
+              {
+                text: "Migrating",
+                items: manifest.migrations.map((m) => ({ text: m.title, link: `/guide/migration/${m.slug}` })),
+              },
+            ]
+          : []),
         { text: "Next", items: [{ text: "Language guide", link: "/language/" }] },
+      ],
+      "/modules/": [
+        {
+          text: "The tools module",
+          items: [
+            { text: "Overview", link: "/modules/tools/" },
+            ...modules.pages.map((p) => ({ text: p.title, link: `/modules/tools/${p.slug}` })),
+          ],
+        },
       ],
       "/language/": [
         {

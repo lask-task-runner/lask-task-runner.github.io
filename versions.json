@@ -3,7 +3,8 @@
     {
       "version": "0.8.0",
       "site": "HEAD",
-      "lask": "dev"
+      "lask": "dev",
+      "tools": "v0.3.1"
     }
   ]
 }

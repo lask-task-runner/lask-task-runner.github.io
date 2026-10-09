@@ -27,7 +27,21 @@ const read = (rel) => fs.readFileSync(path.join(SRC, rel), "utf8");
 const exists = (rel) => fs.existsSync(path.join(SRC, rel));
 const isDir = (rel) => exists(rel) && fs.statSync(path.join(SRC, rel)).isDirectory();
 
+// VitePress compiles a page as a Vue template, so `{{ ... }}` outside a code
+// block is an expression to evaluate: GitHub Actions' `${{ secrets.X }}` in a
+// table cell fails the build. Such inline code becomes <code v-pre>, which
+// Vue leaves alone.
+function guardInterpolation(md) {
+  const html = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return splitFences(md)
+    .map(({ code, text }) =>
+      code ? text : text.replace(/`([^`\n]*\{\{[^`\n]*)`/g, (_, c) => `<code v-pre>${html(c)}</code>`),
+    )
+    .join("");
+}
+
 function write(rel, content) {
+  if (rel.endsWith(".md")) content = guardInterpolation(content);
   const out = path.join(DOCS, rel);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, content);
@@ -82,6 +96,8 @@ const routes = new Map([
   ["doc/quick-reference.md", "/reference/quick-reference"],
   ["doc/spec.md", "/reference/spec"],
   ["doc/compatibility.md", "/reference/compatibility"],
+  ["doc/migration/from-make.md", "/guide/migration/from-make"],
+  ["doc/migration/from-github-actions.md", "/guide/migration/from-github-actions"],
   ["example", "/examples/"],
   ["example/README.md", "/examples/"],
   ["example/01-projects", "/examples/"],
@@ -255,6 +271,24 @@ for (const [file, route] of [
 }
 
 // ---------------------------------------------------------------------------
+// Migration guides: doc/migration/*.md, whole. A lask checkout from before
+// the guides were written has none, and the sidebar lists what exists.
+
+const MIGRATIONS = [
+  ["doc/migration/from-make.md", "from-make"],
+  ["doc/migration/from-github-actions.md", "from-github-actions"],
+];
+const migrations = MIGRATIONS.filter(([file]) => exists(file)).map(([file, slug]) => {
+  const md = read(file);
+  write(
+    `guide/migration/${slug}.md`,
+    frontmatter({ ...source(file), outline: [2, 3] }) +
+      collapseBlankLines(rewriteLinks(normalizeFences(md), file)),
+  );
+  return { slug, title: md.match(/^# (.+)$/m)?.[1] ?? slug };
+});
+
+// ---------------------------------------------------------------------------
 // Language guide: example/02-language/<topic>/ plus its README section
 
 const langReadme = read("example/02-language/README.md");
@@ -416,6 +450,7 @@ write(
     {
       topics: topics.map(({ slug, title }) => ({ slug, title })),
       projects: projects.map(({ slug, title }) => ({ slug, title })),
+      migrations,
     },
     null,
     2,

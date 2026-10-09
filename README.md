@@ -12,17 +12,20 @@ Most pages are generated from the lask repository at build time by [scripts/sync
 | Language guide topics, and the overview's topic table | `example/02-language/` (the README and each topic's files) |
 | Examples | `example/01-projects/*/README.md` |
 | Reference | `doc/quick-reference.md`, `doc/spec.md`, `doc/compatibility.md` |
+| Guide → Migrating | `doc/migration/*.md` |
+
+The module reference (Modules) is generated from [lask-module-tools](https://github.com/lask-task-runner/lask-module-tools), at the tag `versions.json` names in `tools`. [scripts/module-help.sh](scripts/module-help.sh) asks `lask` itself for the help of every function in it, as JSON (`lask run --format json <fn> --help`), and [scripts/modules.mjs](scripts/modules.mjs) turns that and the module's README into pages: the README as the overview, and one page per category of its catalog. A function's entry is its doc comment and signature, so it is edited in that repository.
 
 To change one of those, edit it in the lask repository; every generated page's "Edit this page" link goes there. Written here by hand: the home page ([docs/index.md](docs/index.md)), the Guide pages other than Installation ([docs/guide/](docs/guide)), the language guide's overview ([docs/language/index.md](docs/language/index.md)), the navigation ([docs/.vitepress/config.mts](docs/.vitepress/config.mts)) and the `lask` syntax highlighting ([docs/.vitepress/lask.tmLanguage.json](docs/.vitepress/lask.tmLanguage.json)).
 
 ## Develop
 
-You need Lask and Docker, and the lask repository checked out next to this one. Node and VitePress run in a container ([main.lask](main.lask)):
+You need Lask and Docker, and the lask and lask-module-tools repositories checked out next to this one. Node and VitePress run in a container ([main.lask](main.lask)):
 
 ```bash
 lask sync                              # one-time: pulls the Node image
 lask run dev                           # http://localhost:5173, reloads as you edit
-lask run dev --lask-src ~/src/lask     # another checkout (or set LASK_SRC)
+lask run dev --lask-src ~/src/lask     # another checkout (or set LASK_SRC; TOOLS_SRC for the module)
 lask run preview                       # every version, as deployed, http://localhost:4173
 lask run --help                        # every task
 ```

@@ -43,6 +43,23 @@ internal absolute(path: String): String = case {
 
 internal default_lask_src(): String = get_env_or("LASK_SRC", "../lask")
 
+internal default_tools_src(): String = get_env_or("TOOLS_SRC", "../lask-module-tools")
+
+// Dump lask's help for the official module at the ref each version in
+// versions.json names, into .module-help/, for the module reference.
+// It runs on the host: it needs the lask binary, which the Node container
+// does not have.
+internal module_help(tools_src: String) = do {
+  listed: Record<versions: Array<Map<String>>> = cast(from_json(read_file("versions.json", #local)))
+  for (v : listed.versions) {
+    ref = get_or(v, "tools", "")
+    case {
+      ref == "" -> "no module reference for #{v["version"]}"
+      else -> $[#local] sh scripts/module-help.sh #{shell_quote(tools_src)} #{shell_quote(ref)} #{shell_quote(".module-help/tools-#{ref}")}
+    }
+  }
+}
+
 // Install the dependencies exactly as package-lock.json pins them, into
 // the node_modules volume. Run it again after package.json changes.
 install() = $ npm ci
@@ -65,9 +82,12 @@ pages(--lask_src: String = default_lask_src()) = do {
 //
 // @param port      The port, on the host and in the container alike.
 // @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+// @param tools_src The lask-module-tools checkout, for the module reference:
+//                  ../lask-module-tools unless TOOLS_SRC names another.
 // @example lask run dev --port 8080
-dev(--port: Number = 5173, --lask_src: String = default_lask_src()) = do {
+dev(--port: Number = 5173, --lask_src: String = default_lask_src(), --tools_src: String = default_tools_src()) = do {
   ensure_installed()
+  module_help(tools_src)
   log("open http://localhost:#{port}")
   $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run dev -- --host 0.0.0.0 --port #{port}
 }
@@ -79,8 +99,11 @@ dev(--port: Number = 5173, --lask_src: String = default_lask_src()) = do {
 // both fetched.
 //
 // @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
-build(--lask_src: String = default_lask_src()) = do {
+// @param tools_src The lask-module-tools checkout, for the module reference:
+//                  ../lask-module-tools unless TOOLS_SRC names another.
+build(--lask_src: String = default_lask_src(), --tools_src: String = default_tools_src()) = do {
   ensure_installed()
+  module_help(tools_src)
   $[site(absolute(lask_src), [])] npm run build
 }
 
@@ -89,9 +112,11 @@ build(--lask_src: String = default_lask_src()) = do {
 //
 // @param port      The port, on the host and in the container alike.
 // @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
+// @param tools_src The lask-module-tools checkout, for the module reference:
+//                  ../lask-module-tools unless TOOLS_SRC names another.
 // @example lask run preview
-preview(--port: Number = 4173, --lask_src: String = default_lask_src()) = do {
-  build(lask_src = lask_src)
+preview(--port: Number = 4173, --lask_src: String = default_lask_src(), --tools_src: String = default_tools_src()) = do {
+  build(lask_src = lask_src, tools_src = tools_src)
   log("open http://localhost:#{port}")
   $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run preview -- #{port}
 }
