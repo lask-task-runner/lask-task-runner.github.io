@@ -37,36 +37,14 @@ features:
     link: /language/dependencies
 ---
 
-<script setup>
-import { onMounted } from "vue";
-
-// A muted autoplay video stays paused after Vue hydrates the page, though
-// the same markup plays in a plain page. Start it once the page is mounted;
-// a browser that refuses still shows the poster and the controls.
-onMounted(() => {
-  for (const v of document.querySelectorAll(".home-demo video[autoplay]")) {
-    v.muted = true;
-    v.play().catch(() => {});
-  }
-});
-</script>
-
 
 <div class="home-demo">
 
-<video autoplay muted loop playsinline preload="metadata" width="960" height="540" poster="/media/lask-tour-short.jpg" aria-label="Lask in 20 seconds: a typo caught in the editor, then a release task whose tests run side by side and whose deploy steps each run in their own container, the same on a laptop and in CI">
-  <source src="/media/lask-tour-short.mp4" type="video/mp4">
-</video>
-
-A 20-second clip: a typo caught in the editor, then a `release` task whose tests run side by side and whose deploy steps each run in their own container, the same on a laptop and in CI. Its tasks are a shortened form of the [Web app on AWS](/examples/webapp-on-aws) example.
-
-<h2 class="home-demo-title">Lask in one minute</h2>
-
-<video controls playsinline preload="none" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in one minute: a command in the REPL, the same command kept as a task, a run in containers, the same run on a laptop and in CI, and secrets kept in Vault">
+<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in one minute: a command in the REPL, the same command kept as a task, a run in containers, the same run on a laptop and in CI, and secrets kept in Vault">
   <source src="/media/lask-tour.mp4" type="video/mp4">
 </video>
 
-The full tour, in five steps: try a command in the REPL, keep it as a task, run it, run the same thing on a laptop and in CI, and keep secrets in Vault.
+Lask in one minute, in five steps: try a command in the REPL, keep it as a task, run it, run the same thing on a laptop and in CI, and keep secrets in Vault.
 
 </div>
 
