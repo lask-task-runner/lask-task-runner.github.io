@@ -40,7 +40,9 @@ onUnmounted(() => document.removeEventListener("click", close));
     </button>
     <ul v-show="open" class="version-menu">
       <li v-for="v in info.versions" :key="v.version">
-        <a :href="hrefFor(v.version)" :aria-current="v.version === info.current ? 'page' : undefined">
+        <!-- target keeps VitePress's router from handling the link inside
+             this version's app: another version is another app. -->
+        <a :href="hrefFor(v.version)" target="_self" :aria-current="v.version === info.current ? 'page' : undefined">
           v{{ label(v) }}
           <span v-if="v.version === info.latestRelease" class="tag">latest</span>
         </a>
