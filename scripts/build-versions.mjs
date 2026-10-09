@@ -77,8 +77,14 @@ for (const v of resolved) {
 
   // The lask sources, as a clone that shares the checkout's objects: sync.mjs
   // lists tracked files with git, and the checkout itself may be read-only.
+  // clone reads the checkout through upload-pack, which does not inherit -c,
+  // so it gets safe.directory itself: in the container the checkout belongs
+  // to another user.
   const laskDir = path.join(tmp, `lask-${v.version}`);
-  execFileSync("git", ["-c", "safe.directory=*", "clone", "-q", "--shared", "--no-checkout", LASK, laskDir]);
+  execFileSync("git", [
+    "-c", "safe.directory=*", "clone", "-q", "--shared", "--no-checkout",
+    "-u", "git -c safe.directory=* upload-pack", LASK, laskDir,
+  ]);
   git(laskDir, "checkout", "-q", "--detach", v.laskCommit);
 
   // The site sources: this checkout, or an older ref exported beside it,
