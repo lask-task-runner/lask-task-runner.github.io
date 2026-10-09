@@ -11,12 +11,11 @@ Most pages are generated from the lask repository at build time by [scripts/sync
 | Guide → Installation | `README.md` (its sections) |
 | Language guide topics, and the overview's topic table | `example/02-language/` (the README and each topic's files) |
 | Examples | `example/01-projects/*/README.md` |
-| Reference | `doc/quick-reference.md`, `doc/spec.md`, `doc/compatibility.md` |
-| Guide → Migrating | `doc/migration/*.md` |
+| Reference → Language specification, Compatibility policy | `doc/spec.md`, `doc/compatibility.md` |
 
 The module reference (Modules) is generated from [lask-module-tools](https://github.com/lask-task-runner/lask-module-tools), at the tag `versions.json` names in `tools`. [scripts/module-help.sh](scripts/module-help.sh) asks `lask` itself for the help of every function in it, as JSON (`lask run --format json <fn> --help`), and [scripts/modules.mjs](scripts/modules.mjs) turns that and the module's README into pages: the README as the overview, and one page per category of its catalog. A function's entry is its doc comment and signature, so it is edited in that repository.
 
-To change one of those, edit it in the lask repository; every generated page's "Edit this page" link goes there. Written here by hand: the home page ([docs/index.md](docs/index.md)), the Guide pages other than Installation ([docs/guide/](docs/guide)), the language guide's overview ([docs/language/index.md](docs/language/index.md)), the navigation ([docs/.vitepress/config.mts](docs/.vitepress/config.mts)) and the `lask` syntax highlighting ([docs/.vitepress/lask.tmLanguage.json](docs/.vitepress/lask.tmLanguage.json)).
+The lask repository keeps only what the implementation needs, so documentation for users is written here. To change a generated page, edit its source in the lask repository; every generated page's "Edit this page" link goes there. Written here by hand: the home page ([docs/index.md](docs/index.md)), the Guide pages other than Installation, including the migration guides ([docs/guide/](docs/guide)), the quick reference ([docs/reference/quick-reference.md](docs/reference/quick-reference.md)), the language guide's overview ([docs/language/index.md](docs/language/index.md)), the navigation ([docs/.vitepress/config.mts](docs/.vitepress/config.mts)) and the `lask` syntax highlighting ([docs/.vitepress/lask.tmLanguage.json](docs/.vitepress/lask.tmLanguage.json)).
 
 ## Develop
 
