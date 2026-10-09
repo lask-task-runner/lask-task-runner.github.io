@@ -141,7 +141,6 @@ export default defineConfig({
 
     footer: {
       message: "Released under the MIT License.",
-      copyright: "Docker is a trademark of Docker, Inc. Other names belong to their owners.",
     },
   },
 });
