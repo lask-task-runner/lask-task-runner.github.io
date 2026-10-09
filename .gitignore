@@ -13,3 +13,9 @@ docs/language/*
 !docs/language/index.md
 docs/examples/
 docs/reference/
+docs/guide/migration/
+
+# Generated from the official modules by scripts/module-help.sh (with lask)
+# and scripts/modules.mjs
+.module-help/
+docs/modules/
