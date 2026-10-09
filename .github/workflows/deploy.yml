@@ -44,8 +44,8 @@ jobs:
       # runner needs only Lask and Docker.
       - name: Install Lask
         env:
-          LASK_VERSION: v0.7.0
-          LASK_SHA256: da8faa6f0049c55d4b548a7217b2e55410e7512433bf3eec9170e54b07be6d09
+          LASK_VERSION: v0.8.0
+          LASK_SHA256: f161676c6313882b7aec1ac79ecde31483c8fdda29f0f867f8daef95f157e3f0
         run: |
           curl -fsSL -o lask.tar.gz \
             "https://github.com/lask-task-runner/lask/releases/download/${LASK_VERSION}/lask-${LASK_VERSION}-linux-amd64.tar.gz"
