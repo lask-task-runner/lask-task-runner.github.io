@@ -68,7 +68,7 @@ The lock pins the image, but this machine doesn't have it: a fresh clone, a new 
 
 The registry has no image with that name or tag. The reason is on the image's progress line; the summary table at the end shows only `failed: E-IO-IMAGE-MISSING`, and `lask sync` exits with code 3. `lask check` can't catch this, because it doesn't contact the registry; it only checks that every command has an environment. Look up the right tag on the image's registry page.
 
-In Lask 0.7.0, a failed `lask sync` still rewrites `lask.lock.json`. If you replaced a working tag with a bad one, the old tag's pin is gone too, so after you fix the tag, run `lask sync` again.
+A failed `lask sync` leaves the images in `lask.lock.json` as they were, and its summary says `lask.lock.json unchanged`. If you replaced a working tag with a bad one, the old tag's pin is still there.
 
 ### "cannot reach the Docker daemon"
 
@@ -97,15 +97,15 @@ The image is built only for `linux/amd64`, so Docker runs it under emulation. It
 
 ## Commands
 
-### A command fails with an empty message
+### A command fails and "wrote nothing to stderr"
 
 ```text
-E-RUNTIME-COMMAND-NONZERO:
+E-RUNTIME-COMMAND-NONZERO: the command exited with code 1 and wrote nothing to stderr; its output is in the command log
 stack trace (innermost first):
   at lint (main.lask)
 ```
 
-When a `$` command exits with a non-zero code, the error message is the command's stderr. Many tools, linters especially, print their findings on stdout, so the message is empty. The output is still in the command log above the error. To put it in the error, run the command with `$*` and fail with your own message, as in [Your first real task file](./first-task-file#step-5-a-readable-failure).
+When a `$` command exits with a non-zero code, the error message is the command's stderr. Many tools, linters especially, print their findings on stdout and nothing on stderr, so the error can only point you to the command log above it, where the output is. A program that catches the error with `try` sees an empty `message`. To put it in the error, run the command with `$*` and fail with your own message, as in [Your first real task file](./first-task-file#step-5-a-readable-failure).
 
 ### "is not a declared command"
 
@@ -136,7 +136,7 @@ A `$` command takes the rest of its line, closing brackets included. `passed($* 
 ### "an if statement without else"
 
 ```text
-main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return
+main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return; for a side effect under a condition, add an empty else: if (c) { ... } else {}
 ```
 
 `if` is an expression and needs an `else`. The only exception is a guard that returns early: `if (dry_run) { return "skipped" }`. For a side effect such as a log line, write an empty `else`:
@@ -205,7 +205,7 @@ E-CLI-USAGE: too many positional arguments: expected 0, got 1
 
 ### `lask` starts and nothing happens
 
-`lask run` and `lask eval` read stdin to the end before the task starts, so a task can use what was piped in. If stdin is open and nothing writes to it, which happens when another program or a script starts `lask`, it waits. Add `</dev/null` to the command.
+A task that uses `stdin` reads it to the end before it starts, so it can use what was piped in. If stdin is open and nothing writes to it, which happens when another program or a script starts `lask`, the task waits. Add `</dev/null` to the command. A task that never refers to `stdin` doesn't read it, so this doesn't happen to it.
 
 ### `--frozen` fails in CI
 
@@ -225,7 +225,7 @@ W-ASYNC-UNAWAITED: the async at main.lask:31:7 was never awaited; it was waited 
 
 A task started with `async` was never awaited, usually because an earlier `await` failed and the task stopped there. Lask waits for it before exiting and reports it, with its error if it failed. The warning doesn't change the exit code.
 
-It is expected when you `await` handles in turn, as the warning in [Your first real task file](./first-task-file#step-5-a-readable-failure) suggests. `all([a, b])` stops at the first failure without this warning, but in Lask 0.7.0 it leaves the other steps' containers running in the background.
+It is expected when you `await` handles in turn, as [Your first real task file](./first-task-file#step-5-a-readable-failure) describes. `all([a, b])` stops at the first failure without this warning: it stops the other steps, and the log shows them as `killed`.
 
 ## Getting help
 

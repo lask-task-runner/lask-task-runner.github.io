@@ -5,8 +5,8 @@
   "scripts": {
     "sync": "node scripts/sync.mjs",
     "dev": "npm run sync && vitepress dev docs",
-    "build": "npm run sync && vitepress build docs",
-    "preview": "vitepress preview docs"
+    "build": "node scripts/build-versions.mjs",
+    "preview": "node scripts/serve.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

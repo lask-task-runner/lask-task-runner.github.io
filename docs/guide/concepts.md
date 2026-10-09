@@ -143,7 +143,7 @@ $ lask eval publish --dry-run true
 - `runnable(image, env = {...})` sets variables in the container. Lask passes only the variable's name on the `docker` command line, never its value, and the single-quoted `$API_TOKEN` is expanded by the shell inside the container.
 - A keyword parameter's default is evaluated before the task starts, even when the task returns early. With `get_env("API_TOKEN")` as the default, a dry run would fail with `E-RUNTIME-ACCESS: environment variable is not set` when the variable is unset. `get_env_or("API_TOKEN", "")` gives `""` instead, and the task decides what an empty token means. This also covers a CI system that sets the variable to an empty string when the secret is missing.
 - Pass secrets through the environment, not as `--token` on the command line, where other processes and your shell history can see them.
-- Masking replaces every occurrence of the value, so a very short secret also masks the same letters inside other words in the log.
+- A value of 8 characters or more is masked wherever it appears in the log. A shorter one is masked only where it stands as a word of its own, so a one-letter token doesn't mask that letter inside other words.
 
 More: [Input, output and secrets](/language/io-and-secrets), which also covers secret references such as `{vault://secret/app#token}`.
 
