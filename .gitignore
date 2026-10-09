@@ -1,6 +1,7 @@
 node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+site-dist/
 
 # Generated from the lask repository by scripts/sync.mjs
 docs/.vitepress/generated/

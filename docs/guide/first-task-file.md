@@ -156,8 +156,10 @@ $ lask run ci
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:2] 1|  --> app/calc.py:1:8
 ...
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:2] 1| Found 1 error.
+...
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:2] exit 1
-E-RUNTIME-COMMAND-NONZERO:
+[#python:3.13.7-alpine3.22:1] killed
+E-RUNTIME-COMMAND-NONZERO: the command exited with code 1 and wrote nothing to stderr; its output is in the command log
 stack trace (innermost first):
   at lint (main.lask)
   at <lambda@15:7> (main.lask)
@@ -166,7 +168,9 @@ $ echo $?
 1
 ```
 
-The run failed, and `lask` exited with Ruff's exit code, 1. The error message after `E-RUNTIME-COMMAND-NONZERO:`, though, is empty. When a `$` command exits with a non-zero code, the error's message is the command's stderr, and Ruff reports its findings on stdout. In a long CI log, the reason for a failure is easiest to find when it is in the error itself.
+The run failed, and `lask` exited with Ruff's exit code, 1. The test was still running when the lint failed, so Lask stopped it: that is the `killed` line.
+
+When a `$` command exits with a non-zero code, the error's message is the command's stderr. Ruff reports its findings on stdout, so the error only says where to look: the command log above it. In a long CI log, the reason for a failure is easiest to find when it is in the error itself.
 
 ## Step 5: a readable failure
 
@@ -223,6 +227,7 @@ $ lask run ci
 [#python:3.13.7-alpine3.22:2] $ python -m unittest discover -s app
 ...
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:1] exit 1
+[#python:3.13.7-alpine3.22:2] killed
 E-RUNTIME: lint failed:
 F401 [*] `os` imported but unused
  --> app/calc.py:1:8
@@ -244,11 +249,7 @@ stack trace (innermost first):
 
 (The double space in `ruff check  app` is where the empty `fix_flag` went.)
 
-`all` fails as soon as one of its handles fails. Here the lint failed first, so `lask` reported it and exited without waiting for the test.
-
-::: warning The other step keeps running
-In Lask 0.7.0, when `all` fails early, the container of a step that is still running is not stopped. It finishes in the background after `lask` has exited, and its log is not shown. If you want every step to finish and show its log even when one fails, `await` each handle in turn instead: `[await l, await t]`. Lask then waits for both. The result is still the first failure, and Lask reports the handle it never got to as `W-ASYNC-UNAWAITED`, which is expected here.
-:::
+`all` fails as soon as one of its handles fails, and stops the others: their commands and containers are stopped, and the log shows them as `killed`. If you want every step to finish and show its log even when one fails, `await` each handle in turn instead: `[await l, await t]`. Lask then waits for both. The result is still the first failure, and Lask reports the handle it never got to as `W-ASYNC-UNAWAITED`, which is expected here.
 
 ## Step 6: an option from the command line
 
@@ -309,7 +310,7 @@ lint(--fix = false): String = do {
 
 ```text
 $ lask check
-main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return
+main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return; for a side effect under a condition, add an empty else: if (c) { ... } else {}
 ```
 
 An `if` with no `else` is allowed in one case only: as a guard that ends in `return`, such as `if (dry_run) { return "skipped" }`. For a side effect, give it an empty `else`:
@@ -337,9 +338,10 @@ lint(): String = do {
 $ lask check
 main.lask:6:7: E-SYNTAX-UNEXPECTED-TOKEN [syntax]: unexpected =
 expecting !=, &&, (, *, +, -, ., /, ;, <, <<, <=, <|, ==, >, >=, >>, [, newline, |>, ||, or }
+  note: the command on line 6 runs to the end of its line, so its closing ')' was read as part of the command; a command cannot sit inside brackets: bind it to a name on its own line first
 ```
 
-The shell command became `ruff check app)`, and the call to `passed` was never closed. Bind the command's result to a name on its own line first, as Step 5 does with `r = $* ...`.
+The shell command became `ruff check app)`, and the call to `passed` was never closed. The parser notices only later, at the `=`, but the note names the command. Bind the command's result to a name on its own line first, as Step 5 does with `r = $* ...`.
 
 ## What you have
 

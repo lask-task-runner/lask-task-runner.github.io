@@ -108,11 +108,6 @@ const README_ANCHORS = {
   feedback: `${REPO}/discussions`,
 };
 
-// The reading order of the language topics, where it differs from their
-// numbers: Environments explains `#image` and `#local`, which Commands
-// uses from its first line.
-const TOPIC_ORDER = ["05-environments", "04-commands"];
-
 // ---------------------------------------------------------------------------
 // Links: every relative link is resolved against the source file's location,
 // then sent to a site page, a copied media file, or the file on GitHub.
@@ -313,15 +308,7 @@ function topicNeeds(dir) {
   return lead === "Pure" ? "Lask only" : lead;
 }
 
-const readingOrder = (dirs) => {
-  const moved = TOPIC_ORDER.filter((d) => dirs.includes(d));
-  const out = dirs.filter((d) => !moved.includes(d));
-  const at = Math.min(...moved.map((d) => dirs.indexOf(d)));
-  out.splice(at, 0, ...moved);
-  return out;
-};
-
-const topics = readingOrder(topicDirs).map((d) => ({
+const topics = topicDirs.map((d) => ({
   dir: d,
   slug: slugOf(d),
   title: topicTitle(d),

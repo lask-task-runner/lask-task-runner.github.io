@@ -4,7 +4,7 @@
 //
 //   lask sync          # one-time: pulls the Node image
 //   lask run dev       # http://localhost:5173, reloads as you edit
-//   lask run preview   # the production build, http://localhost:4173
+//   lask run preview   # every version as CI builds it, http://localhost:4173
 
 // The full Debian image, not -slim: scripts/sync.mjs lists the lask
 // checkout's tracked files with git, which -slim does not carry.
@@ -72,7 +72,11 @@ dev(--port: Number = 5173, --lask_src: String = default_lask_src()) = do {
   $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run dev -- --host 0.0.0.0 --port #{port}
 }
 
-// Build the site into docs/.vitepress/dist, as CI does.
+// Build every version in versions.json into site-dist/, as CI does.
+//
+// Each version is built from the lask checkout's tag v<version>, or from
+// its development branch until that tag exists, so the checkout needs
+// both fetched.
 //
 // @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
 build(--lask_src: String = default_lask_src()) = do {
@@ -80,7 +84,8 @@ build(--lask_src: String = default_lask_src()) = do {
   $[site(absolute(lask_src), [])] npm run build
 }
 
-// Build the site, then serve the result until you stop it.
+// Build every version, then serve them as GitHub Pages would, until you
+// stop it.
 //
 // @param port      The port, on the host and in the container alike.
 // @param lask_src  The lask checkout: ../lask unless LASK_SRC names another.
@@ -88,5 +93,5 @@ build(--lask_src: String = default_lask_src()) = do {
 preview(--port: Number = 4173, --lask_src: String = default_lask_src()) = do {
   build(lask_src = lask_src)
   log("open http://localhost:#{port}")
-  $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run preview -- --host 0.0.0.0 --port #{port}
+  $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run preview -- #{port}
 }

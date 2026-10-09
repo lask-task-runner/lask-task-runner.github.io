@@ -97,7 +97,7 @@ The three commands are the same everywhere. What differs is how the job gets a D
 
 ## Things to know
 
-- **stdin.** `lask run` and `lask eval` read stdin to the end before starting the task, since a task can use it as `stdin`. If your CI system or a wrapper script leaves stdin open without writing to it, `lask` waits. Run it with `</dev/null` in that case.
+- **stdin.** A task that uses `stdin` reads it to the end before it starts. If your CI system or a wrapper script leaves stdin open without writing to it, such a task waits; run it with `</dev/null`. A task that never refers to `stdin` doesn't read it.
 - **Logs.** The command log goes to stderr, with a timestamp on each line. `--format json` makes every stderr line a JSON object, if your CI parses logs: `lask run --format json ci`.
 - **Platforms.** For an image published for several platforms, the lock records the digest of the whole multi-platform index, so a lock written on an arm64 laptop works on an amd64 runner, and each machine pulls its own variant. An image built only for `linux/amd64` runs under emulation on an arm64 runner, if the runner supports that.
 - **`.lask/`.** Dependencies are fetched into `.lask/` in the project directory. Add it to `.gitignore`: `lask sync` fetches it again from what the lock pins.
