@@ -32,11 +32,6 @@ const versionInfo: VersionInfo = process.env.DOCS_MANIFEST
       versions: listed.versions.map((v) => ({ version: v.version, released: false })),
     };
 const currentVersion = process.env.DOCS_VERSION ?? versionInfo.default;
-const current = versionInfo.versions.find((v) => v.version === currentVersion);
-// A banner sits above the nav on every page of a version that is not the
-// latest release: one not released yet, or one a newer release replaced.
-const hasBanner =
-  !current?.released || (versionInfo.latestRelease !== null && versionInfo.latestRelease !== currentVersion);
 // Where a generated page's source is edited: the branch lask develops on.
 const laskEditBranch = process.env.LASK_EDIT_BRANCH ?? "dev";
 // VitePress prefixes links with the base, but not what `head` names.
@@ -70,7 +65,6 @@ export default defineConfig({
     ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: `${base}favicon-32.png` }],
     ["link", { rel: "apple-touch-icon", href: `${base}apple-touch-icon.png` }],
     ["meta", { name: "theme-color", content: "#4f46e5" }],
-    ...(hasBanner ? [["style", {}, ":root { --vp-layout-top-height: 40px; } @media (max-width: 640px) { :root { --vp-layout-top-height: 60px; } }"] as [string, Record<string, string>, string]] : []),
   ],
 
   // The edit link of a generated page names its file in the lask repository
@@ -93,7 +87,7 @@ export default defineConfig({
   },
 
   themeConfig: {
-    // Read by the version switcher and banner (theme/Version*.vue).
+    // Read by the version switcher (theme/VersionSwitch.vue).
     docsVersion: { current: currentVersion, ...versionInfo },
     logo: { src: "/logo.svg", alt: "" },
     notFound: {
