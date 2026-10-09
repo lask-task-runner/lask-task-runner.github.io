@@ -46,7 +46,7 @@ Each version of Lask has its own copy of the site, at `/<version>/`. [versions.j
 - `site`: the ref of this repository the hand-written pages come from. `HEAD` is the checkout being deployed, so the newest version follows `main`.
 - `lask`: the lask branch the generated pages come from until lask has the tag `v<version>`. Once the tag exists, the build uses it.
 
-The tag is also what makes a version released. Until lask is tagged, the version switcher shows "(unreleased)", and every page has a banner saying that the latest release may not have what the page describes. The first build after the tag, which the daily schedule guarantees, removes both. A version older than the latest release gets a banner pointing to the latest instead.
+The tag is also what makes a version released. Until lask is tagged, the version switcher beside the title shows "(unreleased)"; the first build after the tag, which the daily schedule guarantees, removes it. The switcher also marks the latest release.
 
 `/` redirects to the newest released version, or to the newest version while none is released. A path without a version, such as a link from before versions existed, redirects to the same page in that version. A page a version does not have redirects to that version's home.
 

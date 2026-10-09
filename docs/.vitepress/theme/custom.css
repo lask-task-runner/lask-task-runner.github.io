@@ -123,7 +123,7 @@
 .vp-doc div[class*="language-text"] > span.lang,
 .vp-doc div[class*="language-txt"] > span.lang { display: none; }
 
-/* ---- Versions (VersionSwitch.vue, VersionBanner.vue) ---- */
+/* ---- Version switcher (VersionSwitch.vue) ---- */
 
 .version-switch {
   position: relative;
@@ -182,29 +182,4 @@
   border-radius: 999px;
   background: var(--vp-c-brand-soft);
   color: var(--vp-c-brand-1);
-}
-
-.version-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: var(--vp-z-index-layout-top);
-  height: var(--vp-layout-top-height);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  font-size: 13px;
-  line-height: 1.4;
-  text-align: center;
-  color: var(--vp-c-warning-1);
-  /* The soft colours are translucent; the page scrolls underneath. */
-  background: linear-gradient(var(--vp-c-warning-soft), var(--vp-c-warning-soft)), var(--vp-c-bg);
-  border-bottom: 1px solid var(--vp-c-divider);
-}
-.version-banner a { color: inherit; text-decoration: underline; }
-.version-banner.older {
-  color: var(--vp-c-text-1);
-  background: linear-gradient(var(--vp-c-default-soft), var(--vp-c-default-soft)), var(--vp-c-bg);
 }
