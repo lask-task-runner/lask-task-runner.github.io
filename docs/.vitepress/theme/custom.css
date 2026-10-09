@@ -14,12 +14,6 @@
   --vp-c-brand-3: #6366f1;
 }
 
-.home-demo,
-.home-sample {
-  max-width: 960px;
-  margin: 48px auto 0;
-  padding: 0 24px;
-}
 
 .home-demo img {
   width: 100%;
@@ -27,6 +21,104 @@
   border: 1px solid var(--vp-c-divider);
 }
 
-.home-sample {
-  max-width: 760px;
+
+/* ---- r2 polish ---- */
+
+/* Dark mode: white button text needs a deeper indigo to reach AA */
+.dark {
+  --vp-button-brand-bg: #4f46e5;
+  --vp-button-brand-hover-bg: #6366f1;
+  --vp-button-brand-active-bg: #4338ca;
+  --vp-c-brand-soft: rgba(129, 140, 248, 0.16);
 }
+
+.VPHero .name { letter-spacing: -0.03em; }
+.VPHero .text { letter-spacing: -0.02em; }
+
+/* Hero card (HeroSnippet.vue); hidden where the hero is one column */
+.hero-card {
+  display: none;
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background: var(--vp-code-block-bg);
+  box-shadow: 0 24px 48px -24px rgba(79, 70, 229, 0.4);
+  text-align: left;
+  overflow: hidden;
+}
+.hero-card-bar { display: flex; gap: 6px; padding: 12px 14px 0; }
+.hero-card-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--vp-c-divider); }
+.hero-card pre { margin: 0; padding: 14px 20px 20px; font: 13.5px/1.7 var(--vp-font-family-mono); color: var(--vp-c-text-1); overflow: hidden; }
+.hero-card .c { color: var(--vp-c-text-3); }
+.hero-card .k { color: var(--vp-c-brand-1); }
+.hero-card .s { color: #0369a1; }
+.dark .hero-card .s { color: #7dd3fc; }
+.hero-card .f { color: #7c3aed; }
+.dark .hero-card .f { color: #c4b5fd; }
+.hero-card .p { color: var(--vp-c-text-3); user-select: none; }
+@media (min-width: 960px) {
+  .hero-card { display: block; }
+}
+
+/* Home: one column width (the features grid) for demo and sample */
+.home-demo, .home-sample { margin: 48px 0 0; }
+.home-demo img { box-shadow: 0 24px 48px -24px rgba(79, 70, 229, 0.35); }
+.home-sample div[class*="language-"] { margin-left: 0; margin-right: 0; }
+
+/* Feature cards: flat, brand hover */
+.VPFeature { background: transparent !important; border: 1px solid var(--vp-c-divider) !important; transition: border-color 0.2s, transform 0.2s; }
+.VPFeature:hover { border-color: var(--vp-c-brand-1) !important; transform: translateY(-2px); }
+.VPFeature .title { font-weight: 600; }
+.VPFeature code { font-size: 0.92em; padding: 0.08em 0.35em; border-radius: 4px; background: var(--vp-code-bg); color: var(--vp-c-text-1); }
+
+/* Content screenshots */
+.vp-doc img:not(.VPImage) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 16px auto;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.12);
+}
+.dark .vp-doc img:not(.VPImage) { filter: brightness(0.9); }
+
+/* Tables */
+.vp-doc table { font-size: 14px; }
+.vp-doc th, .vp-doc td { padding: 8px 12px; }
+.vp-doc td code { white-space: nowrap; }
+
+/* Inline code */
+.vp-doc :not(pre) > code {
+  font-size: 0.86em;
+  padding: 0.1em 0.4em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.vp-doc a > code { color: inherit; }
+
+/* Outline wraps instead of truncating */
+.VPDocAsideOutline .outline-link { white-space: normal; line-height: 1.4; padding: 3px 0; }
+
+.vp-doc h1 { letter-spacing: -0.02em; }
+.vp-doc h2 { letter-spacing: -0.01em; }
+
+/* Badge under the h1 */
+.vp-doc .VPBadge { margin: 8px 0 0; padding: 2px 10px; font-size: 12px; background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1); border: 1px solid transparent; }
+.vp-doc h1 + .VPBadge { display: inline-block; }
+
+/* ---- r3 ---- */
+/* Hero image slot holds only the desktop card; collapse it where hidden (it left ~280px of blank above the title on mobile) */
+@media (max-width: 959px) {
+  .VPHero .image { display: none; }
+}
+/* Three-line hero title: a notch smaller so it sits as a headline, not a wall */
+@media (min-width: 960px) {
+  .VPHero.has-image .text { font-size: 46px; line-height: 52px; }
+}
+/* Terminal output blocks need no "text" language label */
+.vp-doc div[class*="language-text"] > span.lang,
+.vp-doc div[class*="language-txt"] > span.lang { display: none; }

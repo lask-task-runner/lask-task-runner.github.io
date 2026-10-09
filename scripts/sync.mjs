@@ -53,11 +53,14 @@ const listDirs = (rel) =>
     .map((d) => d.name)
     .sort();
 
-const projectDirs = listDirs("example/01-projects");
+// Hello, world is the file Getting started walks through, in an older
+// form; on the site, that page replaces it. Its links go to GitHub.
+const SKIP_PROJECTS = new Set(["01-hello-world"]);
+
+const projectDirs = listDirs("example/01-projects").filter((d) => !SKIP_PROJECTS.has(d));
 const topicDirs = listDirs("example/02-language");
 
 const PROJECT_TITLES = {
-  "hello-world": "Hello, world",
   "webapp-on-aws": "Web app on AWS",
   "local-llm": "Local LLM",
   "nextjs-e2e": "Next.js end-to-end tests",
@@ -72,7 +75,10 @@ const titleFromSlug = (slug) =>
 
 // Repo path -> site route. Directories and their README map to the same page.
 const routes = new Map([
-  ["README.md", "/guide/why-lask"],
+  // The README's only bare link on the site is the quick reference's
+  // "Installation and the case for Lask are in the README": the reader
+  // following it wants to install.
+  ["README.md", "/guide/installation"],
   ["doc/quick-reference.md", "/reference/quick-reference"],
   ["doc/spec.md", "/reference/spec"],
   ["doc/compatibility.md", "/reference/compatibility"],
@@ -90,12 +96,22 @@ for (const d of topicDirs) {
   routes.set(`example/02-language/${d}`, `/language/${slugOf(d)}`);
 }
 
-// README sections that became pages of their own.
+// README sections that became pages of their own. Why Lask and Getting
+// started are written by hand in this repository; Installation is the
+// only page still taken from the README.
 const README_ANCHORS = {
   install: "/guide/installation",
   "editor-support": "/guide/installation#editor-support",
-  usage: "/guide/getting-started#the-cli-at-a-glance",
+  usage: "/reference/quick-reference#cli",
+  "why-lask": "/guide/why-lask",
+  comparison: "/guide/why-lask#how-lask-compares",
+  feedback: `${REPO}/discussions`,
 };
+
+// The reading order of the language topics, where it differs from their
+// numbers: Environments explains `#image` and `#local`, which Commands
+// uses from its first line.
+const TOPIC_ORDER = ["05-environments", "04-commands"];
 
 // ---------------------------------------------------------------------------
 // Links: every relative link is resolved against the source file's location,
@@ -181,8 +197,26 @@ function sections(md) {
 
 const source = (rel) => ({ source: rel });
 
+// Joining sections leaves runs of blank lines; Markdown renders them the
+// same, but they make the generated files hard to read and diff.
+const collapseBlankLines = (md) =>
+  splitFences(md)
+    .map(({ code, text }) => (code ? text : text.replace(/\n{3,}/g, "\n\n")))
+    .join("");
+
+// "## Table of Contents" and its list, up to the next heading. The site
+// shows its own outline beside the page.
+const dropTableOfContents = (md) =>
+  md.replace(/^## Table of Contents\n[\s\S]*?(?=^## )/m, "");
+
+// How to get a copy of a directory of the lask repository.
+const cloneBlock = (dirRel) =>
+  "```bash\n" + `git clone ${REPO}.git\n` + `cd lask/${dirRel}\n` + "```\n";
+
 // ---------------------------------------------------------------------------
-// Pages from README.md
+// Pages from README.md: Installation only. Why Lask and Getting started
+// are written by hand (docs/guide/), so the pitch can be shaped for the
+// site and every sample on them checked against the binary.
 
 // The home page's demo.
 resolveLink("doc/assets/lask-pv-short.gif", "README.md");
@@ -191,46 +225,24 @@ const readme = read("README.md");
 const readmeSections = sections(readme);
 
 write(
-  "guide/why-lask.md",
-  frontmatter(source("README.md")) +
-    rewriteLinks(
-      [
-        "# Why Lask\n",
-        readmeSections[""]
-          .split("\n")
-          .filter((l) => /^Lask (\(lambda|is for|aims)/.test(l))
-          .join("\n\n"),
-        "\n",
-        readmeSections["Why Lask"],
-        "## Comparison\n",
-        readmeSections["Comparison"],
-        "## Status\n",
-        readmeSections["Status"],
-      ].join("\n"),
-      "README.md",
-    ),
-);
-
-write(
   "guide/installation.md",
   frontmatter(source("README.md")) +
-    rewriteLinks(
-      normalizeFences(
-        detailsToContainers(
-          [
-            "# Installation\n",
-            readmeSections["Install"],
-            "## Editor support\n",
-            readmeSections["Editor Support"],
-          ].join("\n"),
+    collapseBlankLines(
+      rewriteLinks(
+        normalizeFences(
+          detailsToContainers(
+            [
+              "# Installation\n",
+              readmeSections["Install"],
+              "## Editor support\n",
+              readmeSections["Editor Support"],
+            ].join("\n"),
+          ),
         ),
+        "README.md",
       ),
-      "README.md",
     ),
 );
-
-// Included by the hand-written guide/getting-started.md.
-write("guide/_usage.md", rewriteLinks(readmeSections["Usage"], "README.md"));
 
 // ---------------------------------------------------------------------------
 // Reference: doc/*.md, whole
@@ -243,7 +255,7 @@ for (const [file, route] of [
   write(
     `reference/${route}.md`,
     frontmatter({ ...source(file), outline: [2, 3] }) +
-      rewriteLinks(normalizeFences(read(file)), file),
+      collapseBlankLines(rewriteLinks(normalizeFences(dropTableOfContents(read(file))), file)),
   );
 }
 
@@ -285,34 +297,74 @@ function codeGroup(dirRel) {
 const topicTitle = (dir) =>
   read(`example/02-language/${dir}/main.lask`).match(/^\/\/ (.+)$/m)?.[1] ?? titleFromSlug(slugOf(dir));
 
-const topics = topicDirs.map((d) => ({ dir: d, slug: slugOf(d), title: topicTitle(d) }));
+// What each topic covers, from the table in example/README.md.
+const topicCovers = Object.fromEntries(
+  [...read("example/README.md").matchAll(/^\| \[(\d+-[^/\]]+)\/?\]\(02-language\/[^)]*\) \| (.+?) \|$/gm)].map(
+    (m) => [m[1], m[2]],
+  ),
+);
 
-// The README's intro, up to the first topic, is the guide's index page.
-const langIntro = langReadme.split(/^---$/m)[0];
+// What a topic needs to run, from the bold lead of its README section:
+// "**Pure.**" or "**Docker** for the last task.".
+function topicNeeds(dir) {
+  const m = (langSections[dir] ?? "").match(/^\*\*([^*]+)\*\*([^.\n]*)/m);
+  if (!m) return "";
+  const lead = m[1].endsWith(".") ? m[1].slice(0, -1) : (m[1] + m[2]).trim();
+  return lead === "Pure" ? "Lask only" : lead;
+}
+
+const readingOrder = (dirs) => {
+  const moved = TOPIC_ORDER.filter((d) => dirs.includes(d));
+  const out = dirs.filter((d) => !moved.includes(d));
+  const at = Math.min(...moved.map((d) => dirs.indexOf(d)));
+  out.splice(at, 0, ...moved);
+  return out;
+};
+
+const topics = readingOrder(topicDirs).map((d) => ({
+  dir: d,
+  slug: slugOf(d),
+  title: topicTitle(d),
+  covers: topicCovers[d] ?? "",
+  needs: topicNeeds(d),
+}));
+
+// The overview page (language/index.md) is written by hand; this is the
+// table of topics it includes.
 write(
-  "language/index.md",
-  frontmatter(source("example/02-language/README.md")) +
-    rewriteLinks(
-      langIntro.replace(/^# .+$/m, "# Language guide"),
-      "example/02-language/README.md",
-      { localAnchors: topicAnchors },
-    ) +
-    "\n## Topics\n\n" +
-    topics.map((t) => `- [${t.title}](./${t.slug})`).join("\n") +
+  "language/_topics.md",
+  "| Topic | Covers | Needs |\n| --- | --- | --- |\n" +
+    topics.map((t) => `| [${t.title}](./${t.slug}) | ${t.covers} | ${t.needs} |`).join("\n") +
     "\n",
 );
 
 for (const t of topics) {
   const dirRel = `example/02-language/${t.dir}`;
+  const files = sourceFiles(dirRel);
+  const tree = `${REPO}/tree/${BRANCH}/${dirRel}`;
+  const pure = t.needs === "Lask only";
+  const howToTry =
+    files.length === 1
+      ? `To try the commands above, paste the source below into \`main.lask\` in an empty directory${
+          pure ? "" : " and run `lask sync` first"
+        }, or clone the repository:\n\n`
+      : `This topic has ${files.length} files, so clone the repository to try it:\n\n`;
   write(
     `language/${t.slug}.md`,
-    frontmatter(source(`${dirRel}/main.lask`)) +
+    // The prose on this page is the topic's section of the README; the
+    // files under "Source" say where they come from themselves.
+    frontmatter(source("example/02-language/README.md")) +
       `# ${t.title}\n\n` +
-      rewriteLinks(langSections[t.dir] ?? "", "example/02-language/README.md", {
-        localAnchors: topicAnchors,
-      }) +
-      `\nRun it from \`${dirRel}\` in a checkout of the [lask repository](${REPO}).\n\n` +
-      `## Source\n\n` +
+      collapseBlankLines(
+        rewriteLinks(langSections[t.dir] ?? "", "example/02-language/README.md", {
+          localAnchors: topicAnchors,
+        }),
+      ).trim() +
+      "\n\n" +
+      howToTry +
+      cloneBlock(dirRel) +
+      `\n## Source\n\n` +
+      `${files.length === 1 ? "This is" : "These are"} [${dirRel}](${tree}) in the lask repository.\n\n` +
       codeGroup(dirRel),
   );
 }
@@ -338,9 +390,16 @@ for (const p of projects) {
   const dirRel = `example/01-projects/${p.dir}`;
   const readmeRel = `${dirRel}/README.md`;
   const tree = `${REPO}/tree/${BRANCH}/${dirRel}`;
+  // A README is written for someone standing in a checkout, so its first
+  // `cd example/...` becomes a clone on the site, where there is none.
+  const fromCheckout = (md) =>
+    md.replace(
+      new RegExp(`^cd ${dirRel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "m"),
+      `git clone ${REPO}.git\ncd lask/${dirRel}`,
+    );
   const body = exists(readmeRel)
-    ? rewriteLinks(normalizeFences(read(readmeRel)), readmeRel)
-    : `${p.blurb ?? ""}\n\n## main.lask\n\n${codeGroup(dirRel)}`;
+    ? collapseBlankLines(fromCheckout(rewriteLinks(normalizeFences(read(readmeRel)), readmeRel)))
+    : `${p.blurb ?? ""}\n\nTo try it, clone the repository:\n\n${cloneBlock(dirRel)}\n## main.lask\n\n${codeGroup(dirRel)}`;
   write(
     `examples/${p.slug}.md`,
     frontmatter(source(exists(readmeRel) ? readmeRel : `${dirRel}/main.lask`)) +
@@ -355,7 +414,7 @@ write(
   "examples/index.md",
   frontmatter(source("example/README.md")) +
     "# Examples\n\n" +
-    "Whole projects, where the language is in service of a job. Each one runs from a machine with nothing but Lask and Docker installed.\n\n" +
+    "Whole projects, where the language is in service of a job. To run one, you need Lask and what its Needs column lists. The tools the tasks use come from container images, so none of them is installed on your machine.\n\n" +
     "| Example | What it does | Needs |\n| --- | --- | --- |\n" +
     projects.map((p) => `| [${p.title}](./${p.slug}) | ${p.blurb ?? ""} | ${p.needs ?? ""} |`).join("\n") +
     "\n\nFor how something is written rather than what it is for, see the [language guide](/language/).\n",

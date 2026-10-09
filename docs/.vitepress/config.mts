@@ -34,7 +34,15 @@ export default defineConfig({
   // The examples point at servers they start themselves.
   ignoreDeadLinks: "localhostLinks",
 
-  head: [["meta", { name: "theme-color", content: "#5b5bd6" }]],
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }],
+    ["link", { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" }],
+    ["link", { rel: "apple-touch-icon", href: "/apple-touch-icon.png" }],
+    ["meta", { name: "theme-color", content: "#4f46e5" }],
+  ],
+
+  // Lets the Playwright container reach the dev server as host.docker.internal.
+  vite: { server: { allowedHosts: ["host.docker.internal"] } },
 
   markdown: {
     languages: [laskGrammar as any],
@@ -43,6 +51,13 @@ export default defineConfig({
   },
 
   themeConfig: {
+    logo: { src: "/logo.svg", alt: "" },
+    notFound: {
+      title: "Page not found",
+      quote: "That page moved or never existed. Try the search, or start from the home page.",
+      linkLabel: "home page",
+      linkText: "Back to home",
+    },
     nav: [
       { text: "Guide", link: "/guide/getting-started", activeMatch: "^/guide/" },
       { text: "Language", link: "/language/", activeMatch: "^/language/" },
@@ -66,9 +81,13 @@ export default defineConfig({
         {
           text: "Guide",
           items: [
-            { text: "Getting started", link: "/guide/getting-started" },
-            { text: "Installation", link: "/guide/installation" },
             { text: "Why Lask", link: "/guide/why-lask" },
+            { text: "Getting started", link: "/guide/getting-started" },
+            { text: "Your first real task file", link: "/guide/first-task-file" },
+            { text: "Core concepts", link: "/guide/concepts" },
+            { text: "Running in CI", link: "/guide/ci" },
+            { text: "Troubleshooting", link: "/guide/troubleshooting" },
+            { text: "Installation", link: "/guide/installation" },
           ],
         },
         { text: "Next", items: [{ text: "Language guide", link: "/language/" }] },

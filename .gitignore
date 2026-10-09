@@ -5,9 +5,10 @@ docs/.vitepress/dist/
 # Generated from the lask repository by scripts/sync.mjs
 docs/.vitepress/generated/
 docs/public/lask/
-docs/guide/why-lask.md
 docs/guide/installation.md
-docs/guide/_usage.md
-docs/language/
+# The language overview is written here; its topic table (_topics.md)
+# and the topic pages are generated.
+docs/language/*
+!docs/language/index.md
 docs/examples/
 docs/reference/
