@@ -184,6 +184,5 @@
   color: var(--vp-c-brand-1);
 }
 
-/* Home: the demo videos */
+/* Home: the demo video */
 .home-demo video { display: block; width: 100%; height: auto; background: #0b0f14; }
-.home-demo-title { margin: 48px 0 16px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; border: 0; padding: 0; }
