@@ -40,16 +40,26 @@ jobs:
           path: lask-src
           fetch-depth: 0
 
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-
-      - run: npm ci
-
-      - run: npm run build
+      # Node and VitePress run in the container main.lask declares, so the
+      # runner needs only Lask and Docker.
+      - name: Install Lask
         env:
-          LASK_SRC: lask-src
+          LASK_VERSION: v0.7.0
+          LASK_SHA256: da8faa6f0049c55d4b548a7217b2e55410e7512433bf3eec9170e54b07be6d09
+        run: |
+          curl -fsSL -o lask.tar.gz \
+            "https://github.com/lask-task-runner/lask/releases/download/${LASK_VERSION}/lask-${LASK_VERSION}-linux-amd64.tar.gz"
+          echo "${LASK_SHA256}  lask.tar.gz" | sha256sum -c -
+          tar -xzf lask.tar.gz
+          sudo mv ./lask /usr/local/bin
+          rm lask.tar.gz
+          lask version
+
+      - run: lask sync --frozen
+
+      - run: lask check
+
+      - run: lask run build --lask-src lask-src
 
       - uses: actions/configure-pages@v6
         if: github.event_name != 'pull_request'
