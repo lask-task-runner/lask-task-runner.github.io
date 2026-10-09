@@ -9,7 +9,6 @@ const manifestPath = new URL("./generated/manifest.json", import.meta.url);
 const manifest: {
   topics: { slug: string; title: string }[];
   projects: { slug: string; title: string }[];
-  migrations?: { slug: string; title: string }[];
 } = fs.existsSync(manifestPath)
   ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
   : { topics: [], projects: [] };
@@ -136,14 +135,13 @@ export default defineConfig({
             { text: "Installation", link: "/guide/installation" },
           ],
         },
-        ...(manifest.migrations?.length
-          ? [
-              {
-                text: "Migrating",
-                items: manifest.migrations.map((m) => ({ text: m.title, link: `/guide/migration/${m.slug}` })),
-              },
-            ]
-          : []),
+        {
+          text: "Migrating",
+          items: [
+            { text: "Migrating from Make", link: "/guide/migration/from-make" },
+            { text: "Migrating from GitHub Actions", link: "/guide/migration/from-github-actions" },
+          ],
+        },
         { text: "Next", items: [{ text: "Language guide", link: "/language/" }] },
       ],
       "/modules/": [

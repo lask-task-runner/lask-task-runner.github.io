@@ -13,6 +13,7 @@ import { execFileSync } from "node:child_process";
 const SRC = path.resolve(process.env.LASK_SRC ?? "../lask");
 const DOCS = path.resolve("docs");
 const REPO = "https://github.com/lask-task-runner/lask";
+const SITE_URL = "https://lask-task-runner.github.io/";
 const BRANCH = process.env.LASK_REF ?? "main";
 
 const MEDIA = /\.(png|jpe?g|gif|svg|webp|mp4)$/i;
@@ -129,6 +130,10 @@ const README_ANCHORS = {
 // then sent to a site page, a copied media file, or the file on GitHub.
 
 function resolveLink(target, fromRel, { localAnchors = {} } = {}) {
+  // lask links to pages that live only on this site (the quick reference,
+  // the migration guides) by their unversioned URL; here they stay in the
+  // version being built.
+  if (target.startsWith(SITE_URL)) return target.slice(SITE_URL.length - 1) || "/";
   if (/^([a-z]+:|\/\/)/i.test(target)) return target;
   if (target.startsWith("#")) return localAnchors[target.slice(1)] ?? target;
 
@@ -258,8 +263,9 @@ write(
 // ---------------------------------------------------------------------------
 // Reference: doc/*.md, whole
 
+// The quick reference is written in this repository (docs/reference/
+// quick-reference.md); lask keeps only what the implementation needs.
 for (const [file, route] of [
-  ["doc/quick-reference.md", "quick-reference"],
   ["doc/spec.md", "spec"],
   ["doc/compatibility.md", "compatibility"],
 ]) {
@@ -269,24 +275,6 @@ for (const [file, route] of [
       collapseBlankLines(rewriteLinks(normalizeFences(dropTableOfContents(read(file))), file)),
   );
 }
-
-// ---------------------------------------------------------------------------
-// Migration guides: doc/migration/*.md, whole. A lask checkout from before
-// the guides were written has none, and the sidebar lists what exists.
-
-const MIGRATIONS = [
-  ["doc/migration/from-make.md", "from-make"],
-  ["doc/migration/from-github-actions.md", "from-github-actions"],
-];
-const migrations = MIGRATIONS.filter(([file]) => exists(file)).map(([file, slug]) => {
-  const md = read(file);
-  write(
-    `guide/migration/${slug}.md`,
-    frontmatter({ ...source(file), outline: [2, 3] }) +
-      collapseBlankLines(rewriteLinks(normalizeFences(md), file)),
-  );
-  return { slug, title: md.match(/^# (.+)$/m)?.[1] ?? slug };
-});
 
 // ---------------------------------------------------------------------------
 // Language guide: example/02-language/<topic>/ plus its README section
@@ -450,7 +438,6 @@ write(
     {
       topics: topics.map(({ slug, title }) => ({ slug, title })),
       projects: projects.map(({ slug, title }) => ({ slug, title })),
-      migrations,
     },
     null,
     2,

@@ -12,8 +12,8 @@ docs/guide/installation.md
 docs/language/*
 !docs/language/index.md
 docs/examples/
-docs/reference/
-docs/guide/migration/
+docs/reference/spec.md
+docs/reference/compatibility.md
 
 # Generated from the official modules by scripts/module-help.sh (with lask)
 # and scripts/modules.mjs
