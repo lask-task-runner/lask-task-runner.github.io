@@ -30,7 +30,7 @@ A task is a function with typed parameters, defaults and a return value. `if`, `
 
 ### Every task has a command line
 
-A task's signature is its command line: `release(--dry_run = false)` is `lask run release --dry-run true`. `--help` and the editor's hover both show the comment above the task, its `@param` and `@example` tags, the inferred return type, and the images the task needs. `lask cmd go test ./...` runs a single declared program in its image, and `lask repl` evaluates expressions.
+A task's signature is its command line: calling `release(dry_run = true)` in Lask is the same call as `lask run release --dry-run true` from the shell. `--help` and the editor's hover both show the comment above the task, its `@param` and `@example` tags, the inferred return type, and the images the task needs. `lask cmd go test ./...` runs a single declared program in its image, and `lask repl` evaluates expressions.
 
 ### Secrets and isolation
 

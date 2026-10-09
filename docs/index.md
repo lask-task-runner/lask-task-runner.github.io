@@ -30,7 +30,7 @@ features:
     details: Tasks have typed parameters, defaults and return values. <code>if</code>, <code>case</code>, <code>try</code>/<code>catch</code> and <code>async</code> are part of the language, so there is no shell glue to get wrong.
     link: /language/functions
   - title: A command line for every task
-    details: <code>deploy(--dry_run = false)</code> is <code>lask run deploy --dry-run true</code>, and the comment above it is its <code>--help</code>.
+    details: <code>deploy(dry_run = true)</code> in Lask is the same call as <code>lask run deploy --dry-run true</code> from the shell, and the comment above the task is its <code>--help</code>.
     link: /language/docs-and-cli
   - title: Reuse across projects
     details: Import tasks, and the images they run in, from other repositories. The lock file pins each one by content hash.
