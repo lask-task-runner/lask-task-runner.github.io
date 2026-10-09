@@ -8,7 +8,9 @@ export default {
   extends: DefaultTheme,
   Layout: () =>
     h(DefaultTheme.Layout, null, {
-      "nav-bar-title-after": () => h(VersionSwitch),
+      // Not in the title's slot: the title is a link home, so a click on the
+      // switcher there followed it.
+      "nav-bar-content-before": () => h(VersionSwitch),
       "home-hero-image": () => h(HeroSnippet),
     }),
 };
