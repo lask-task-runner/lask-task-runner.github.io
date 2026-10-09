@@ -15,7 +15,7 @@
 }
 
 
-.home-demo img {
+.home-demo video {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--vp-c-divider);
@@ -63,7 +63,7 @@
 
 /* Home: one column width (the features grid) for demo and sample */
 .home-demo, .home-sample { margin: 48px 0 0; }
-.home-demo img { box-shadow: 0 24px 48px -24px rgba(79, 70, 229, 0.35); }
+.home-demo video { box-shadow: 0 24px 48px -24px rgba(79, 70, 229, 0.35); }
 .home-sample div[class*="language-"] { margin-left: 0; margin-right: 0; }
 
 /* Feature cards: flat, brand hover */
@@ -183,3 +183,7 @@
   background: var(--vp-c-brand-soft);
   color: var(--vp-c-brand-1);
 }
+
+/* Home: the demo videos */
+.home-demo video { display: block; width: 100%; height: auto; background: #0b0f14; }
+.home-demo-title { margin: 48px 0 16px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; border: 0; padding: 0; }

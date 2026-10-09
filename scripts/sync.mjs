@@ -234,8 +234,6 @@ const cloneBlock = (dirRel) =>
 // are written by hand (docs/guide/), so the pitch can be shaped for the
 // site and every sample on them checked against the binary.
 
-// The home page's demo.
-resolveLink("doc/assets/lask-pv-short.gif", "README.md");
 
 const readme = read("README.md");
 const readmeSections = sections(readme);
