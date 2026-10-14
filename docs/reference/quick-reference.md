@@ -4,7 +4,7 @@ outline: [2,3]
 
 # Lask Quick Reference
 
-The whole language and CLI on one page, for someone who wants to write a task now and read the rules later. Every section links to the chapter of the [language specification](/reference/spec) that defines it; when this page is not enough, follow the link. Installation is in the [README](/guide/installation).
+The whole language and CLI on one page, for someone who wants to write a task now and read the rules later. Every section links to the chapter of the [language specification](/reference/spec) that defines it; when this page is not enough, follow the link. Installation is on its [own page](/guide/installation).
 
 ## A module, end to end
 

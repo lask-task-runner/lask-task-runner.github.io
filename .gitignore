@@ -6,7 +6,6 @@ site-dist/
 # Generated from the lask repository by scripts/sync.mjs
 docs/.vitepress/generated/
 docs/public/lask/
-docs/guide/installation.md
 # The language overview is written here; its topic table (_topics.md)
 # and the topic pages are generated.
 docs/language/*
