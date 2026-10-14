@@ -91,7 +91,7 @@ internal helper() = 1               // not visible outside this module
 export public_task() = 2            // the default; the marker just states it
 ```
 
-One file is one module. Every top-level declaration is public unless marked `internal`. A declaration ends at a newline (or `;`); it continues across lines after `=`, `,`, `:`, `->`, `!`, an unclosed bracket, or a binary operator at either end of the break.
+One file is one module. Every top-level declaration is public unless marked `internal`. A declaration ends at a newline (or `;`); it continues across lines after `=`, `,`, `:`, `?`, `->`, `!`, an unclosed bracket, or a binary operator at either end of the break, and before a line-leading `?` or `:` of a conditional.
 
 ```lask
 import { add, Config } from "./lib/math.lask"   // named, may rename with `as`
@@ -141,8 +141,9 @@ Conformance is small on purpose. Everything conforms to `Any`; a member conforms
 
 → [spec 6.2](/reference/spec#62-operators)
 
-`!` › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` `||` › `|>` `<|` `>>` `<<` — all left-associative.
+`!` › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` `||` › `|>` `<|` `>>` `<<` › `c ? a : b` — all left-associative except the conditional, which is right-associative.
 
+- `c ? a : b` is `if (c) { a } else { b }`: same typing, only the chosen branch runs. `a ? x : b ? y : z` chains; with more conditions prefer `case { ... }`.
 - `x |> f` is `f(x)`; `f <| x` is `f(x)`.
 - `f >> g` is `\(x) -> g(f(x))`; `f << g` is `\(x) -> f(g(x))`.
 - `&&` and `||` short-circuit.
@@ -188,6 +189,7 @@ do {                          // sequence; the value is that of the last stateme
 }
 
 if (c) { x } else { y }       // an expression — `else` is mandatory
+c ? x : y                     // the same, for one-expression branches
 
 case (shell) {                // value dispatch, scrutinee evaluated once
   "bash", "zsh" -> "posix"
@@ -227,7 +229,7 @@ $[#alpine:3.20] uname -a        // explicit environment
 $[env] sh -lc 'echo hi'         // any expression of type Environment
 ```
 
-A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first).
+A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first).
 
 ```lask
 #local                          // the host
