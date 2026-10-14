@@ -148,17 +148,17 @@ Usage: lask run [--module PATH] [--format text|json] [--trace-id ID]
 ...
 Functions in main.lask:
   hello         A task that runs no command is an ordinary function.
-  cowsay_hello  Calls hello, then runs cowsay in its container.
+  cowsay-hello  Calls hello, then runs cowsay in its container.
 ```
 
 After a task's name, `--help` describes that task: its parameters, its return type and the images it needs.
 
 ```text
 $ lask run cowsay-hello --help
-cowsay_hello - Calls hello, then runs cowsay in its container.
+cowsay-hello - Calls hello, then runs cowsay in its container.
 
 Usage:
-  lask run cowsay_hello <name>
+  lask run cowsay-hello <name>
 
 Parameters:
   name : String
