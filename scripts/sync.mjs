@@ -1,7 +1,7 @@
 // Generate the site's pages from a checkout of lask-task-runner/lask.
 //
-// The lask repository stays the single source: its README, doc/ and
-// example/ are read here and written into docs/ on every build, so the
+// The lask repository stays the single source: its doc/ and example/
+// are read here and written into docs/ on every build, so the
 // generated pages are never committed (see .gitignore).
 //
 //   LASK_SRC=../lask node scripts/sync.mjs
@@ -90,9 +90,7 @@ const titleFromSlug = (slug) =>
 
 // Repo path -> site route. Directories and their README map to the same page.
 const routes = new Map([
-  // The README's only bare link on the site is the quick reference's
-  // "Installation and the case for Lask are in the README": the reader
-  // following it wants to install.
+  // A bare link to the README is someone sent to install.
   ["README.md", "/guide/installation"],
   ["doc/quick-reference.md", "/reference/quick-reference"],
   ["doc/spec.md", "/reference/spec"],
@@ -113,9 +111,8 @@ for (const d of topicDirs) {
   routes.set(`example/02-language/${d}`, `/language/${slugOf(d)}`);
 }
 
-// README sections that became pages of their own. Why Lask and Getting
-// started are written by hand in this repository; Installation is the
-// only page still taken from the README.
+// README sections that became pages of their own, all written by hand in
+// this repository; no page is taken from the README any more.
 const README_ANCHORS = {
   install: "/guide/installation",
   "editor-support": "/guide/installation#editor-support",
@@ -186,19 +183,6 @@ function splitFences(md) {
 const normalizeFences = (md) =>
   md.replace(/^```lask fragment\b/gm, "```lask").replace(/^```ebnf\b/gm, "```txt");
 
-// <details><summary>…</summary> … </details>  ->  ::: details … :::
-function detailsToContainers(md) {
-  return md
-    .replace(/<details(?: open)?>\s*<summary>([\s\S]*?)<\/summary>/g, (_, s) => {
-      const label = s
-        .replace(/<[^>]+>/g, "")
-        .replace(/&middot;/g, "·")
-        .trim();
-      return `::: details ${label}`;
-    })
-    .replace(/<\/details>/g, ":::");
-}
-
 // Sections of a Markdown file by their "## " heading.
 function sections(md) {
   const out = {};
@@ -228,35 +212,6 @@ const dropTableOfContents = (md) =>
 // How to get a copy of a directory of the lask repository.
 const cloneBlock = (dirRel) =>
   "```bash\n" + `git clone ${REPO}.git\n` + `cd lask/${dirRel}\n` + "```\n";
-
-// ---------------------------------------------------------------------------
-// Pages from README.md: Installation only. Why Lask and Getting started
-// are written by hand (docs/guide/), so the pitch can be shaped for the
-// site and every sample on them checked against the binary.
-
-
-const readme = read("README.md");
-const readmeSections = sections(readme);
-
-write(
-  "guide/installation.md",
-  frontmatter(source("README.md")) +
-    collapseBlankLines(
-      rewriteLinks(
-        normalizeFences(
-          detailsToContainers(
-            [
-              "# Installation\n",
-              readmeSections["Install"],
-              "## Editor support\n",
-              readmeSections["Editor Support"],
-            ].join("\n"),
-          ),
-        ),
-        "README.md",
-      ),
-    ),
-);
 
 // ---------------------------------------------------------------------------
 // Reference: doc/*.md, whole
