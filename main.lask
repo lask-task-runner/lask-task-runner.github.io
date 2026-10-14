@@ -120,3 +120,99 @@ preview(--port: Number = 4173, --lask_src: String = default_lask_src(), --tools_
   log("open http://localhost:#{port}")
   $[site(absolute(lask_src), ["127.0.0.1:#{port}:#{port}"])] npm run preview -- #{port}
 }
+
+// ---------------------------------------------------------------------
+// Releasing a version
+//
+// What README.md describes under "When a version is released and the
+// next one starts", run on the host with git and an authenticated gh,
+// after lask vX.Y.Z is published.
+// ---------------------------------------------------------------------
+
+lask_repo = "lask-task-runner/lask"
+
+type Asset = Record<name: String, digest: String | Null>
+
+// The sha256 GitHub records for one asset of a lask release.
+internal asset_sha256(tag: String, name: String): String = do {
+  out = $[#local] gh release view #{tag} --repo #{lask_repo} --json assets --jq '{assets: [.assets[] | {name, digest}]}'
+  listed: Record<assets: Array<Asset>> = cast(from_json(out))
+  found = find(listed.assets, \(a: Asset) -> a.name == name)
+  case (found) {
+    Null -> fail(error(1, "#{tag} has no #{name}"))
+    else -> do {
+      d = found.digest
+      case (d) {
+        Null -> fail(error(1, "GitHub records no digest for #{name}"))
+        else -> replace(d, "sha256:", "")
+      }
+    }
+  }
+}
+
+// Rewrite each line of a file that matches pattern.
+internal rewrite_lines(file: String, pattern: String, replacement: String) = do {
+  text = read_file(file, #local)
+  updated = map(lines(text), \(l: String) -> case {
+    regex_test(l, pattern) -> regex_replace(l, pattern, replacement)
+    else -> l
+  })
+  write_file(file, concat(join(updated, "\n"), "\n"), #local)
+}
+
+internal json_string(s: String): String = to_json(s)
+
+// versions.json, in the layout it is written in by hand.
+internal versions_json(entries: Array<Map<String>>): String = do {
+  keys_in_order = ["version", "site", "lask", "tools"]
+  entry = \(v: Map<String>) -> do {
+    fields = map(filter(keys_in_order, \(k: String) -> has_key(v, k)), \(k: String) -> "      #{json_string(k)}: #{json_string(v[k])}")
+    "    {\n#{join(fields, ",\n")}\n    }"
+  }
+  "{\n  \"versions\": [\n#{join(map(entries, entry), ",\n")}\n  ]\n}\n"
+}
+
+// Name a released version on the pages, freeze them for it, and start
+// the next version.
+//
+// On main: puts the version in Getting started and Running in CI (with
+// the linux-amd64 archive's sha256), commits and tags the result
+// docs-X.Y.Z, then points that version at the tag in versions.json and
+// adds the next one on top, using dev and the same tools ref. Pushes
+// main and the tag. Asks for confirmation (lask.json).
+//
+// @param version  The version lask just released, without the leading v.
+// @param next     The version main describes from now on.
+// @example lask run release 0.9.0 0.10.0
+release(version: String, next: String) = do {
+  tag = "v#{version}"
+  $[#local] git switch -q main && git pull -q --ff-only origin main
+  $[#local] git diff --quiet && git diff --cached --quiet || { echo 'the working tree has uncommitted changes' >&2; exit 1; }
+  listed: Record<versions: Array<Map<String>>> = cast(from_json(read_file("versions.json", #local)))
+  current = first(listed.versions)
+  if (current["version"] != version || current["site"] != "HEAD") {
+    return fail(error(1, "versions.json does not start with #{version} at HEAD"))
+  }
+  existing = $[#local] git ls-remote --tags origin refs/tags/docs-#{version}
+  if (trim(existing) != "") {
+    return fail(error(1, "docs-#{version} already exists"))
+  }
+  sha = asset_sha256(tag, "lask-#{tag}-linux-amd64.tar.gz")
+
+  rewrite_lines("docs/guide/getting-started.md", "^lask [0-9]+\\.[0-9]+\\.[0-9]+$", "lask #{version}")
+  rewrite_lines("docs/guide/ci.md", "LASK_VERSION: v[0-9.]+$", "LASK_VERSION: #{tag}")
+  rewrite_lines("docs/guide/ci.md", "LASK_SHA256: [0-9a-f]+$", "LASK_SHA256: #{sha}")
+  rewrite_lines("docs/guide/ci.md", "for `v[0-9.]+` on `linux-amd64`", "for `#{tag}` on `linux-amd64`")
+  // Nothing to commit when the pages already name it.
+  $[#local] git diff --quiet -- docs/guide || git commit -q -m "Name #{version} as the release in Getting started and Running in CI" -- docs/guide/getting-started.md docs/guide/ci.md
+  $[#local] git tag docs-#{version}
+
+  frozen = map(listed.versions, \(v: Map<String>) -> case {
+    v["version"] == version -> set(v, "site", "docs-#{version}")
+    else -> v
+  })
+  started = merge(current, {"version": next, "site": "HEAD", "lask": "dev"})
+  write_file("versions.json", versions_json(concat_array([started], frozen)), #local)
+  $[#local] git commit -q -m "Freeze #{version} at docs-#{version}, and add #{next} (unreleased)" -- versions.json
+  $[#local] git push -q origin main docs-#{version}
+}
