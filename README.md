@@ -8,14 +8,13 @@ Most pages are generated from the lask repository at build time by [scripts/sync
 
 | Page | Source in lask |
 | --- | --- |
-| Guide → Installation | `README.md` (its sections) |
 | Language guide topics, and the overview's topic table | `example/02-language/` (the README and each topic's files) |
 | Examples | `example/01-projects/*/README.md` |
 | Reference → Language specification, Compatibility policy | `doc/spec.md`, `doc/compatibility.md` |
 
 The module reference (Modules) is generated from [lask-module-tools](https://github.com/lask-task-runner/lask-module-tools), at the tag `versions.json` names in `tools`. [scripts/module-help.sh](scripts/module-help.sh) asks `lask` itself for the help of every function in it, as JSON (`lask run --format json <fn> --help`), and [scripts/modules.mjs](scripts/modules.mjs) turns that and the module's README into pages: the README as the overview, and one page per category of its catalog. A function's entry is its doc comment and signature, so it is edited in that repository.
 
-The lask repository keeps only what the implementation needs, so documentation for users is written here. To change a generated page, edit its source in the lask repository; every generated page's "Edit this page" link goes there. Written here by hand: the home page ([docs/index.md](docs/index.md)), the Guide pages other than Installation, including the migration guides ([docs/guide/](docs/guide)), the quick reference ([docs/reference/quick-reference.md](docs/reference/quick-reference.md)), the language guide's overview ([docs/language/index.md](docs/language/index.md)), the navigation ([docs/.vitepress/config.mts](docs/.vitepress/config.mts)) and the `lask` syntax highlighting ([docs/.vitepress/lask.tmLanguage.json](docs/.vitepress/lask.tmLanguage.json)).
+The lask repository keeps only what the implementation needs, so documentation for users is written here. To change a generated page, edit its source in the lask repository; every generated page's "Edit this page" link goes there. Written here by hand: the home page ([docs/index.md](docs/index.md)), the Guide pages, including the migration guides ([docs/guide/](docs/guide)), the quick reference ([docs/reference/quick-reference.md](docs/reference/quick-reference.md)), the language guide's overview ([docs/language/index.md](docs/language/index.md)), the navigation ([docs/.vitepress/config.mts](docs/.vitepress/config.mts)) and the `lask` syntax highlighting ([docs/.vitepress/lask.tmLanguage.json](docs/.vitepress/lask.tmLanguage.json)).
 
 ## Develop
 
@@ -54,9 +53,17 @@ The tag is also what makes a version released. Until lask is tagged, the version
 
 ### When a version is released and the next one starts
 
-1. On `main`, update what names the release: the `lask version` output in Getting started, and the version and `sha256` in the workflow on Running in CI.
-2. Freeze that state for the released version: `git tag docs-0.8.0 && git push origin docs-0.8.0`.
-3. In `versions.json`, point the released version at that tag, and add the next version at the top:
+Once lask `vX.Y.Z` is published, with an authenticated [gh](https://cli.github.com/):
+
+```bash
+lask run release X.Y.Z X.Y+1.0
+```
+
+It asks you to type `release X.Y.Z` (see `lask.json`), then, on `main`:
+
+1. names the release in the pages: the `lask version` output in Getting started, and the version and `sha256` in the workflow on Running in CI, taking the `sha256` from what GitHub records for the linux-amd64 archive;
+2. tags that state `docs-X.Y.Z`, frozen for the released version;
+3. in `versions.json`, points `X.Y.Z` at that tag and adds the next version on top, with `lask` `dev` and the same `tools`:
 
    ```json
    {
@@ -66,5 +73,7 @@ The tag is also what makes a version released. Until lask is tagged, the version
      ]
    }
    ```
+
+4. pushes `main` and the tag.
 
 From then on, `main` describes the next version, and a fix to the released version's pages goes on a branch from its tag.
