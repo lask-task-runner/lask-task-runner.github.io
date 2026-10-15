@@ -133,17 +133,30 @@ A `$` command takes the rest of its line, closing brackets included. `passed($* 
 
 ## The language
 
-### "an if statement without else"
+### "Lask has no return"
 
 ```text
-main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return; for a side effect under a condition, add an empty else: if (c) { ... } else {}
+main.lask:2:18: E-SYNTAX-UNEXPECTED-TOKEN [syntax]: Lask has no return: the value of a block is its last statement; choose between values with if/else, case, or c ? a : b
 ```
 
-`if` is an expression and needs an `else`. The only exception is a guard that returns early: `if (dry_run) { return "skipped" }`. For a side effect such as a log line, write an empty `else`:
+There is no `return`. A function's value is the value of its body, and a block's value is its last statement. To stop when something is wrong, fail: `if (token == "") { fail(error(2, "no token")) }`. To choose a value, put the rest of the function in the `else`:
 
 ```lask
-if (verbose) { log("verbose") } else {}
+release(--dry_run = false): String = do {
+  if (dry_run) { "skipped" } else {
+    $[#local] ./release.sh
+    "released"
+  }
+}
 ```
+
+### "an if without else is null when its condition is false"
+
+```text
+main.lask:2:3-2:29: E-TYPE-MISMATCH [static]: an if without else is null when its condition is false, and Null does not conform to String; add an else block
+```
+
+An `if` without `else` gives `null` when its condition is false, so its type is `String | Null`, not `String`. Add the `else` the function needs, or declare the result `String | Null` if absence is a real answer.
 
 ### "expected: Void, actual: Null"
 
@@ -160,19 +173,17 @@ main.lask:2:42-2:46: E-TYPE-MISMATCH [static]: type mismatch
   actual:   Null
 ```
 
-`Void` is the type of "no value", such as what `log` returns. `null` is a value, of type `Null`. An empty block, `{}`, is the way to write a `Void` branch: `else {}`.
+`Void` is the type of "no value", such as what `log` returns. `null` is a value, of type `Null`. Leave the `else` out, or write an empty block, `else {}`: either is a `Void` branch.
 
 ### A type mismatch on a parameter you didn't annotate
 
 ```lask
-release(--dry_run = "no"): String = do {
-  if (dry_run == 1) { return "skipped" }
-  "released"
-}
+release(--dry_run = "no"): String =
+  dry_run == 1 ? "skipped" : "released"
 ```
 
 ```text
-main.lask:2:7-2:19: E-TYPE-MISMATCH [static]: type mismatch
+main.lask:2:3-2:15: E-TYPE-MISMATCH [static]: type mismatch
   expected: String
   actual:   Number
 ```

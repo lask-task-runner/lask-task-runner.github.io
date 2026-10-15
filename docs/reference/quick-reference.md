@@ -30,9 +30,10 @@ release(--dry_run = false): String = do {
   web = async $ npm test
   await api
   await web
-  if (dry_run) { return "would build" }
-  $ go build -o dist/app
-  "released"
+  if (dry_run) { "would build" } else {
+    $ go build -o dist/app
+    "released"
+  }
 }
 ```
 
@@ -183,13 +184,14 @@ A declaration may bind type parameters before its parameter list ([Types](#types
 ```lask
 do {                          // sequence; the value is that of the last statement
   a = compute()               // a!!: String = ... marks a secret
-  if (a == "") { return "skip: empty" }   // early return; guard must end in return
+  if (a == "") { fail(error(2, "empty")) }   // stops here; there is no return
   log(a)
   "done"
 }
 
-if (c) { x } else { y }       // an expression — `else` is mandatory
+if (c) { x } else { y }       // an expression: both branches have one type
 c ? x : y                     // the same, for one-expression branches
+if (c) { x }                  // no else: x or null, so T | Null (Void if x is)
 
 case (shell) {                // value dispatch, scrutinee evaluated once
   "bash", "zsh" -> "posix"
@@ -388,7 +390,8 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 
 - `+` is arithmetic only. Strings join with `concat` or `#{...}`.
 - There is no unary minus. `0 - 1`.
-- `if` without `else` is not an expression; it exists only as a `return` guard. For a side effect under a condition, give it an empty `else`: `if (c) { log("...") } else {}`.
+- There is no `return`. A block's value is its last statement: stop with `if (bad) { fail(...) }`, and choose with `if`/`else`, `? :` or `case`.
+- `if` without `else` is `null` when its condition is false, so its value is `T | Null` — which `#{...}` does not take. Give it an `else` where a value is needed.
 - Every `case` needs an `else`, and it must be last.
 - A command with no environment is an error, never the host. `#local` is something you write.
 - A command string swallows the rest of its line, closing brackets included, so a `$` command cannot sit inside a call's parentheses. Bind it to a name on its own line first.

@@ -123,9 +123,10 @@ internal with_token(token: String): Runnable =
 // @param dry_run  Report what would happen instead of publishing.
 publish(--dry_run = false, --token!!: String = get_env_or("API_TOKEN", "")): String = do {
   log("publishing, dry run: #{dry_run}")
-  if (dry_run) { return "would publish" }
-  if (token == "") { return fail(error(2, "API_TOKEN is not set")) }
-  $[with_token(token)] sh -c 'echo "token has ${#API_TOKEN} characters: $API_TOKEN"'
+  if (dry_run) { "would publish" } else {
+    if (token == "") { fail(error(2, "API_TOKEN is not set")) }
+    $[with_token(token)] sh -c 'echo "token has ${#API_TOKEN} characters: $API_TOKEN"'
+  }
 }
 ```
 
@@ -141,7 +142,7 @@ $ lask eval publish --dry-run true
 ```
 
 - `runnable(image, env = {...})` sets variables in the container. Lask passes only the variable's name on the `docker` command line, never its value, and the single-quoted `$API_TOKEN` is expanded by the shell inside the container.
-- A keyword parameter's default is evaluated before the task starts, even when the task returns early. With `get_env("API_TOKEN")` as the default, a dry run would fail with `E-RUNTIME-ACCESS: environment variable is not set` when the variable is unset. `get_env_or("API_TOKEN", "")` gives `""` instead, and the task decides what an empty token means. This also covers a CI system that sets the variable to an empty string when the secret is missing.
+- A keyword parameter's default is evaluated before the task starts, even on a dry run that never uses it. With `get_env("API_TOKEN")` as the default, a dry run would fail with `E-RUNTIME-ACCESS: environment variable is not set` when the variable is unset. `get_env_or("API_TOKEN", "")` gives `""` instead, and the task decides what an empty token means. This also covers a CI system that sets the variable to an empty string when the secret is missing.
 - Pass secrets through the environment, not as `--token` on the command line, where other processes and your shell history can see them.
 - A value of 8 characters or more is masked wherever it appears in the log. A shorter one is masked only where it stands as a word of its own, so a one-letter token doesn't mask that letter inside other words.
 

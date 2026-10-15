@@ -216,7 +216,7 @@ What changed:
 
 - `passed` is a helper. `internal` keeps it out of `lask run --help` and out of other modules' reach. `CommandResult` is the type of what `$*` returns.
 - `fail(error(code, message))` raises an error with your own message. The code becomes the exit code of `lask`.
-- `if` is an expression, so it needs an `else`, and both branches give a value. (There is one exception, shown [below](#an-if-without-else).) `#{...}` puts a value into a string.
+- `if` is an expression: both branches give a value. Without an `else` it gives `null` when the condition is false, which matters [below](#an-if-without-else). `#{...}` puts a value into a string.
 - `lint` takes an option, `--fix`, which is described in the next step.
 
 Run it with the unused import still in place:
@@ -297,26 +297,26 @@ With the import fixed, `lask run ci` passes again and exits with code 0.
 
 ### An `if` without `else`
 
-Say you want a log line only when `--fix` is set, and you write:
+An `if` without `else` is fine for a side effect, such as `if (fix) { log("fixing what ruff can") }`. As a value it is `null` when the condition is false. Say you leave out the `else` of `fix_flag`:
 
 ```lask
 command { "ruff" } on #ghcr.io/astral-sh/ruff:0.13.3-alpine
 
 lint(--fix = false): String = do {
-  if (fix) { log("fixing what ruff can") }
-  $ ruff check app
+  fix_flag = if (fix) { "--fix" }
+  $ ruff check #{fix_flag} app
 }
 ```
 
 ```text
 $ lask check
-main.lask:4:3-4:43: E-SYNTAX-RETURN-POSITION [syntax]: an if statement without else is allowed only when its block ends with return; for a side effect under a condition, add an empty else: if (c) { ... } else {}
+main.lask:5:18-5:26: E-TYPE-BOUND [static]: cannot interpolate a value of type String | Null: it is not stringifiable
 ```
 
-An `if` with no `else` is allowed in one case only: as a guard that ends in `return`, such as `if (dry_run) { return "skipped" }`. For a side effect, give it an empty `else`:
+`fix_flag` is `String | Null`, and `null` cannot go into a command. Say what it is when the condition is false:
 
 ```lask
-  if (fix) { log("fixing what ruff can") } else {}
+  fix_flag = if (fix) { "--fix" } else { "" }
 ```
 
 ### A command inside parentheses
