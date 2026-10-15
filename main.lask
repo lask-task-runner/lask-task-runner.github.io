@@ -150,6 +150,10 @@ internal asset_sha256(tag: String, name: String): String = do {
   }
 }
 
+// Fails with message unless ok. Written without return, and with an
+// else, so that it reads the same to lask before and after 0.10.0.
+internal require(ok: Bool, message: String) = if (ok) { null } else { fail(error(1, message)) }
+
 // Rewrite each line of a file that matches pattern.
 internal rewrite_lines(file: String, pattern: String, replacement: String) = do {
   text = read_file(file, #local)
@@ -190,13 +194,9 @@ release(version: String, next: String) = do {
   $[#local] git diff --quiet && git diff --cached --quiet || { echo 'the working tree has uncommitted changes' >&2; exit 1; }
   listed: Record<versions: Array<Map<String>>> = cast(from_json(read_file("versions.json", #local)))
   current = first(listed.versions)
-  if (current["version"] != version || current["site"] != "HEAD") {
-    return fail(error(1, "versions.json does not start with #{version} at HEAD"))
-  }
+  require(current["version"] == version && current["site"] == "HEAD", "versions.json does not start with #{version} at HEAD")
   existing = $[#local] git ls-remote --tags origin refs/tags/docs-#{version}
-  if (trim(existing) != "") {
-    return fail(error(1, "docs-#{version} already exists"))
-  }
+  require(trim(existing) == "", "docs-#{version} already exists")
   sha = asset_sha256(tag, "lask-#{tag}-linux-amd64.tar.gz")
 
   rewrite_lines("docs/guide/getting-started.md", "^lask [0-9]+\\.[0-9]+\\.[0-9]+$", "lask #{version}")
