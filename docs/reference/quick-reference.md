@@ -125,7 +125,7 @@ type Config = Record<
 xs: Array<String | Null> = ["a", null]
 
 first_or<T>(xs: Array<T>, fallback: T): T =      // a type parameter, never
-  if (is_empty(xs)) { fallback } else { xs[0] }  // written at a call site
+  is_empty(xs) ? fallback : xs[0]                // written at a call site
 n = first_or([1, 2], 0)                          // instantiated at Number here
 
 largest<T: orderable>(xs: Array<T>): T = last(sort(xs))   // a named bound
