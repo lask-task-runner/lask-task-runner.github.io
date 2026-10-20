@@ -1,8 +1,14 @@
 {
   "versions": [
     {
-      "version": "0.11.0",
+      "version": "0.12.0",
       "site": "HEAD",
+      "lask": "dev",
+      "tools": "v0.3.2"
+    },
+    {
+      "version": "0.11.0",
+      "site": "docs-0.11.0",
       "lask": "dev",
       "tools": "v0.3.2"
     },
