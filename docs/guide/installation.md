@@ -124,3 +124,5 @@ The script only ever asks the binary, so it keeps working across upgrades. Compl
 
 `lask serve` is a language server built into the same binary. Install the [Lask extension from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ToruIkeda.vscode-lask), or search for "Lask" in VS Code.
 
+The language server also formats a file, with the same rules as `lask fmt`: run **Format Document** in VS Code, or set `editor.formatOnSave` to format on every save.
+

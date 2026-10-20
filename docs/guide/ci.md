@@ -11,9 +11,18 @@ Lask does not replace your CI service. GitHub Actions, GitLab CI or Jenkins stil
 ## The steps
 
 ```bash
+lask fmt --check      # fails if a .lask file is not formatted
 lask sync --frozen    # pulls the pinned images and fetches dependencies; fails if the lock is out of date
 lask check            # fails on any static error
 lask run ci           # runs the task
+```
+
+`lask fmt --check` lists every `.lask` file that `lask fmt` would change, and exits with code 1 if there is one. It reads only the source, so it needs neither Docker nor the dependencies, and can come first. Leave it out if the project doesn't keep its files formatted; fix a failure by running `lask fmt` locally and committing the result:
+
+```text
+$ lask fmt --check
+lib/deploy.lask
+main.lask
 ```
 
 `lask sync --frozen` pulls each image by the digest in `lask.lock.json`. If the project has dependencies in `lask.json`, it also fetches them into `.lask/` in the project directory and checks them against the hashes in the lock. If `main.lask` names an image the lock doesn't pin (someone changed an image tag and didn't commit the updated lock), it fails with exit code 1 instead of updating the lock:
@@ -61,6 +70,7 @@ jobs:
           tar -xzf lask.tar.gz
           sudo mv ./lask /usr/local/bin
           lask version
+      - run: lask fmt --check
       - run: lask sync --frozen
       - run: lask check
       - run: lask run ci

@@ -60,6 +60,7 @@ $ lask run release --help
 | `lask envs list [fn]` | The environments a module uses, the image the lock pins each to, what requires it, and whether it is on the Docker daemon. |
 | `lask secrets list \| check [fn]` | List the secret references in the environment; check that their stores can be reached and read. |
 | `lask check` | Static validation only. Nothing is evaluated, no image is pulled. |
+| `lask fmt [--check] [path...]` | Format the project's `.lask` files in place, listing the files it changed; `--check` changes nothing and fails if a file is not formatted (CI); `--stdin` formats standard input. |
 | `lask serve` | Language server (LSP). |
 | `lask completion <shell>` | Emit a completion script (bash, zsh, fish). |
 | `lask version` | Print the version. |
