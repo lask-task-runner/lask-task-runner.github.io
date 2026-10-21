@@ -37,7 +37,7 @@ hello(--name = "World") = "Hello, #{name}!"
 // Calls hello, then runs cowsay in its container.
 cowsay_hello(name: String) = do {
   message = hello(name = name)
-  $ cowsay #{shell_quote(message)}
+  $ cowsay #{message}
 }
 ```
 
@@ -45,7 +45,7 @@ The file has three declarations:
 
 - `command { "cowsay" } on #rancher/cowsay` says that the program `cowsay` comes from the Docker image `rancher/cowsay`. `#` followed by an image name is how Lask writes an image.
 - `hello` is a task with one keyword parameter, `--name`, which defaults to `"World"`.
-- `cowsay_hello` takes one positional parameter, calls `hello`, then runs a command. `$ cowsay ...` is a shell command, and Lask runs it in the image declared for `cowsay`. `#{...}` puts a value into the command as it stands, so `shell_quote` turns the message into one shell word: a name such as `it's` or `` `id` `` stays text instead of being read by the shell.
+- `cowsay_hello` takes one positional parameter, calls `hello`, then runs a command. `$ cowsay ...` is a shell command, and Lask runs it in the image declared for `cowsay`. `#{...}` puts a value into the command as one shell word: a name such as `it's` or `` `id` `` stays text instead of being read by the shell.
 
 The `--` in `--name` marks a keyword parameter in the declaration. A caller passes it by name, as `hello(name = ...)` does in `cowsay_hello`.
 

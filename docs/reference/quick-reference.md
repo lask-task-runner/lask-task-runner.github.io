@@ -232,7 +232,7 @@ $[#alpine:3.20] uname -a        // explicit environment
 $[env] sh -lc 'echo hi'         // any expression of type Environment
 ```
 
-A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first).
+A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#{raw(e)}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #{raw(flags)}`. Never give `raw` an argument or a file's contents.
 
 ```lask
 #local                          // the host
@@ -376,7 +376,7 @@ publish(--tag: String = "latest"): String =
 | Strings | `length` `concat` `trim` `to_lower` `to_upper` `split` `join` `replace` `contains` `starts_with` `ends_with` `index_of` `substring` `pad_start` `pad_end` `repeat` `lines` `to_string` `to_number` `regex_test` `regex_match` `regex_replace` |
 | Arrays | `map` `filter` `reduce` `for_each` `append` `concat_array` `size` `is_empty` `first` `last` `slice` `take` `drop` `reverse` `sort` `sort_by` `contains_array` `index_of_array` `find` `find_index` `every` `any` `flatten` `flat_map` `zip` `unique` `range` `enumerate` |
 | Maps | `get` `get_or` `has_key` `keys` `values` `set` `remove` `merge` `entries` `from_entries` `map_values` |
-| Commands | `run` `shell_quote` |
+| Commands | `run` `shell_quote` `raw` |
 | Async | `spawn` `await` `all` `race` |
 | Errors | `recover` `fail` `error` `retry` `retry_if` `until` `timeout` `backoff_fixed` `backoff_linear` `backoff_exponential` |
 | Data | `to_json` `from_json` `encode` `decode` `cast` `base64_encode` `base64_decode` `sha256` `md5` |

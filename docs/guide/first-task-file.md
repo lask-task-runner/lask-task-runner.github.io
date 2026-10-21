@@ -200,7 +200,7 @@ test(): String = do {
 // @param fix  Let ruff fix what it can, in place.
 lint(--fix = false): String = do {
   fix_flag = if (fix) { "--fix" } else { "" }
-  r = $* ruff check #{fix_flag} app
+  r = $* ruff check #{raw(fix_flag)} app
   passed("lint", r)
 }
 
@@ -216,7 +216,7 @@ What changed:
 
 - `passed` is a helper. `internal` keeps it out of `lask run --help` and out of other modules' reach. `CommandResult` is the type of what `$*` returns.
 - `fail(error(code, message))` raises an error with your own message. The code becomes the exit code of `lask`.
-- `if` is an expression: both branches give a value. Without an `else` it gives `null` when the condition is false, which matters [below](#an-if-without-else). `#{...}` puts a value into a string.
+- `if` is an expression: both branches give a value. Without an `else` it gives `null` when the condition is false, which matters [below](#an-if-without-else). `#{...}` puts a value into a string. In a command, it goes in as one shell word, quoted, so an empty `fix_flag` would reach ruff as an empty argument; `raw(...)` puts it in as it is, for the shell to read. Keep `raw` for values your own code chooses, like this flag, never for an argument or a file's contents.
 - `lint` takes an option, `--fix`, which is described in the next step.
 
 Run it with the unused import still in place:
@@ -304,13 +304,15 @@ command { "ruff" } on #ghcr.io/astral-sh/ruff:0.13.3-alpine
 
 lint(--fix = false): String = do {
   fix_flag = if (fix) { "--fix" }
-  $ ruff check #{fix_flag} app
+  $ ruff check #{raw(fix_flag)} app
 }
 ```
 
 ```text
 $ lask check
-main.lask:5:18-5:26: E-TYPE-BOUND [static]: cannot interpolate a value of type String | Null: it is not stringifiable
+main.lask:5:22-5:30: E-TYPE-MISMATCH [static]: type mismatch
+  expected: String
+  actual:   String | Null
 ```
 
 `fix_flag` is `String | Null`, and `null` cannot go into a command. Say what it is when the condition is false:
