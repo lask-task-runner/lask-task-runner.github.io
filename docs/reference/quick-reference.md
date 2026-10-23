@@ -256,7 +256,7 @@ The head is the only place an image is named — no string or variable can name 
 ```lask
 command { "go" } on #golang:1.25
 command { "node", "npm", "npx" } on node
-command { "aws" } on tools.aws(profile = "dev")     // any Environment expression
+command { "aws" } on tools.aws.env(profile = "dev") // any Environment expression
 internal command { "ls" } on #local                 // not importable elsewhere
 
 import command { "python", "pip" } from "tools"     // words another module exports
