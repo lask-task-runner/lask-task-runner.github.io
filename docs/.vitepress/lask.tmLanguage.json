@@ -7,6 +7,7 @@
     "expression": {
       "patterns": [
         { "include": "#comment" },
+        { "include": "#command-declaration" },
         { "include": "#command" },
         { "include": "#string" },
         { "include": "#environment" },
@@ -18,6 +19,19 @@
         { "include": "#keyword-parameter" },
         { "include": "#call" },
         { "include": "#operator" }
+      ]
+    },
+    "command-declaration": {
+      "comment": "`schema` is a keyword only after the environment of a command declaration, on the same line (spec ch. 5).",
+      "begin": "^\\s*(?:(export|internal)\\s+)?(command)\\b(?=\\s*\\{)",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.lask" },
+        "2": { "name": "keyword.other.lask" }
+      },
+      "end": "$",
+      "patterns": [
+        { "name": "keyword.other.schema.lask", "match": "(?<=[\\w)}\\]\"])(?<!\\bon)\\s+\\K\\bschema\\b" },
+        { "include": "#expression" }
       ]
     },
     "comment": {

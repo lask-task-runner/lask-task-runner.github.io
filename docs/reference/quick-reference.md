@@ -113,7 +113,7 @@ External dependencies are declared in `lask.json` (`git` + `rev`, or `url`) and 
 | Base | `Any` `Number` `String` `Bool` `Null` `Void` `Environment` |
 | Composite | `Array<T>` · `Map<T>` (string keys) · `Record<a: T, b?: U>` · `AsyncHandle<T>` · `Function<T1, T2, R>` (last is the return type) |
 | Union | `String \| Null` — the way a value that may be absent is typed |
-| Built-in aliases | `CommandResult = Record<code: Number, stdout: String, stderr: String>` · `Error = Record<code: Number, message: String>` |
+| Built-in aliases | `CommandResult = Record<code: Number, stdout: String, stderr: String>` · `Error = Record<code: Number, message: String>` · `CommandSchema`, `CommandSpec`, `CommandOption` (command schemas, below) |
 
 ```lask
 type Strings = Array<String>          // alias; may not reference itself
@@ -268,6 +268,38 @@ Matching is lexical and exact: `cd web && npm ci` selects the Node image, `FOO=1
 A declaration's environment is evaluated when a command runs, and may not have effects — no command, file, `stdin`, `log` or random value, directly or through what it calls (`E-TYPE-COMMAND-EFFECT`); `get_env` is fine. → [5](/reference/spec#5-declarations-and-modules)
 
 Images are materialized only by `lask sync`; `run` and `eval` never pull or build, and a missing image is `E-IO-IMAGE-MISSING` naming the command that would fix it. → [10.3](/reference/spec#103-container-image-resolution-and-materialization)
+
+**Checked before anything runs.** A command that would certainly fail is rejected before it runs, and nothing that might work is:
+
+- **Shell syntax.** `$ make &&`, `$ | grep x`, `$ cat >`, `$ ( )` and an unclosed quote are `E-TYPE-COMMAND-SYNTAX`, whatever gives the environment. Reading stops at what depends on the shell or on a value — `for`/`if`/`case`, a here-document, `#{raw(...)}` — so nothing past it is reported. → [6.6](/reference/spec#66-command-execution-expressions)
+- **Declared programs.** `lask sync` asks each image whether it has the programs declared on it (`command -v`), and records the answer in the lock (`"commands": {"go": "present"}`). A missing one is `E-IO-COMMAND-MISSING`, from `sync` and, before anything runs, from `run`, `eval` and `cmd` when the task can reach a command using it. Only a declaration on an image written as it is is probed — not `#local`, nor one made by a call. → [5](/reference/spec#5-declarations-and-modules), [11.7](/reference/spec#117-synchronization-sync)
+- **Options**, where a declaration gives a schema:
+
+```lask
+go_schema: CommandSchema = {
+  root: { closed: true, style: "single-dash" },        // "gnu" (default): --long, -abc
+  subcommands: {
+    "test": {
+      closed: true,                                    // nothing else exists: unknown is an error
+      intermixed: true,                                // options may follow arguments
+      options: [
+        { names: ["-v"], description: "verbose output" },
+        { names: ["-run"], value: "required" },        // "none" (default), "required", "optional"
+        { names: ["-covermode"], value: "required", values: ["set", "count", "atomic"] }
+      ]
+    },
+    "mod tidy": { options: [{ names: ["-v"] }] },      // a path; "mod" must be a key too
+    "mod": {}
+  }
+}
+command { "go" } on #golang:1.25 schema { "go": go_schema }
+
+$ go tset ./...          // E-TYPE-COMMAND-OPTION: 'go' has no subcommand 'tset'
+$ go test -run           // E-TYPE-COMMAND-OPTION: requires a value
+$ go mod tidy -x         // W-COMMAND-OPTION: "mod tidy" is not closed, so only advised
+```
+
+A schema is written with literals and references to top-level values — no calls — and its binding is annotated `: CommandSchema`. Only commands whose environment dispatch chose are checked (not `$[env] go ...`), and checking stops at a word it cannot read: `$FLAGS`, `$(...)`, a hole in place of an option, `--`. The editor completes and describes options, subcommands and values from the schema. → [5](/reference/spec#5-declarations-and-modules)
 
 ## Concurrency
 
