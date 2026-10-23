@@ -85,6 +85,15 @@
       "endCaptures": { "0": { "name": "punctuation.section.interpolation.end.lask" } },
       "patterns": [{ "include": "#expression" }]
     },
+    "raw-hole": {
+      "comment": "#!{e} in a command: the shell parses its value (spec 6.6).",
+      "name": "meta.interpolation.raw.lask",
+      "begin": "#!\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.section.interpolation.begin.raw.lask" } },
+      "endCaptures": { "0": { "name": "punctuation.section.interpolation.end.raw.lask" } },
+      "patterns": [{ "include": "#expression" }]
+    },
     "command": {
       "comment": "$ cmd, $1 cmd, $2 cmd, $* cmd, $[env] cmd: the rest of the line is a command string.",
       "name": "meta.command.lask",
@@ -101,8 +110,10 @@
           "endCaptures": { "0": { "name": "punctuation.section.brackets.end.lask" } },
           "patterns": [{ "include": "#expression" }]
         },
+        { "name": "constant.character.escape.lask", "match": "\\\\#!?\\{" },
+        { "include": "#raw-hole" },
         { "include": "#interpolation" },
-        { "name": "string.unquoted.command.lask", "match": "[^#]+|#(?!\\{)" }
+        { "name": "string.unquoted.command.lask", "match": "[^#\\\\]+|\\\\|#(?!!?\\{)" }
       ]
     },
     "environment": {
