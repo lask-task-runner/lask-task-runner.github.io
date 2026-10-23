@@ -34,8 +34,9 @@ cd "$tmp"
 lask run --format json --help </dev/null | tail -n 1 > "$out/functions.json"
 lask cmd --format json --help </dev/null | tail -n 1 > "$out/commands.json"
 
-# One help document per function in the listing.
-grep -o '"name":"[a-z_][a-z0-9_]*"' "$out/functions.json" | cut -d'"' -f4 | while read -r fn; do
+# One help document per function in the listing, a function of a
+# namespace the module re-exports under its qualified name (python.env).
+grep -o '"name":"[a-z_][a-z0-9_.]*"' "$out/functions.json" | cut -d'"' -f4 | while read -r fn; do
   lask run --format json "$fn" --help </dev/null | tail -n 1 > "$out/functions/$fn.json"
 done
 

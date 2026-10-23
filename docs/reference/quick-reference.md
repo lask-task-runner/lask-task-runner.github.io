@@ -113,7 +113,7 @@ External dependencies are declared in `lask.json` (`git` + `rev`, or `url`) and 
 | Base | `Any` `Number` `String` `Bool` `Null` `Void` `Environment` |
 | Composite | `Array<T>` · `Map<T>` (string keys) · `Record<a: T, b?: U>` · `AsyncHandle<T>` · `Function<T1, T2, R>` (last is the return type) |
 | Union | `String \| Null` — the way a value that may be absent is typed |
-| Built-in aliases | `CommandResult = Record<code: Number, stdout: String, stderr: String>` · `Error = Record<code: Number, message: String>` |
+| Built-in aliases | `CommandResult = Record<code: Number, stdout: String, stderr: String>` · `Error = Record<code: Number, message: String>` · `CommandSchema`, `CommandSpec`, `CommandOption` (command schemas, below) |
 
 ```lask
 type Strings = Array<String>          // alias; may not reference itself
@@ -232,7 +232,7 @@ $[#alpine:3.20] uname -a        // explicit environment
 $[env] sh -lc 'echo hi'         // any expression of type Environment
 ```
 
-A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#{raw(e)}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #{raw(flags)}`. Never give `raw` an argument or a file's contents.
+A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#!{e}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #!{flags}`. Never put an argument or a file's contents in it. It exists only in a command; in a string, `"#!{x}"` is just text, and `\#!{` writes a literal one in a command.
 
 ```lask
 #local                          // the host
@@ -256,7 +256,7 @@ The head is the only place an image is named — no string or variable can name 
 ```lask
 command { "go" } on #golang:1.25
 command { "node", "npm", "npx" } on node
-command { "aws" } on tools.aws(profile = "dev")     // any Environment expression
+command { "aws" } on tools.aws.env(profile = "dev") // any Environment expression
 internal command { "ls" } on #local                 // not importable elsewhere
 
 import command { "python", "pip" } from "tools"     // words another module exports
@@ -268,6 +268,38 @@ Matching is lexical and exact: `cd web && npm ci` selects the Node image, `FOO=1
 A declaration's environment is evaluated when a command runs, and may not have effects — no command, file, `stdin`, `log` or random value, directly or through what it calls (`E-TYPE-COMMAND-EFFECT`); `get_env` is fine. → [5](/reference/spec#5-declarations-and-modules)
 
 Images are materialized only by `lask sync`; `run` and `eval` never pull or build, and a missing image is `E-IO-IMAGE-MISSING` naming the command that would fix it. → [10.3](/reference/spec#103-container-image-resolution-and-materialization)
+
+**Checked before anything runs.** A command that would certainly fail is rejected before it runs, and nothing that might work is:
+
+- **Shell syntax.** `$ make &&`, `$ | grep x`, `$ cat >`, `$ ( )` and an unclosed quote are `E-TYPE-COMMAND-SYNTAX`, whatever gives the environment. Reading stops at what depends on the shell or on a value — `for`/`if`/`case`, a here-document, `#!{...}` — so nothing past it is reported. → [6.6](/reference/spec#66-command-execution-expressions)
+- **Declared programs.** `lask sync` asks each image whether it has the programs declared on it (`command -v`), and records the answer in the lock (`"commands": {"go": "present"}`). A missing one is `E-IO-COMMAND-MISSING`, from `sync` and, before anything runs, from `run`, `eval` and `cmd` when the task can reach a command using it. `sync` evaluates each declaration's environment, as `lask cmd` does, and asks the image it names, run with its options; a word on `#local` is not asked about, since a task may install it first. → [5](/reference/spec#5-declarations-and-modules), [11.7](/reference/spec#117-synchronization-sync)
+- **Options**, where a declaration gives a schema:
+
+```lask
+go_schema: CommandSchema = {
+  root: { closed: true, style: "single-dash" },        // "gnu" (default): --long, -abc
+  subcommands: {
+    "test": {
+      closed: true,                                    // nothing else exists: unknown is an error
+      intermixed: true,                                // options may follow arguments
+      options: [
+        { names: ["-v"], description: "verbose output" },
+        { names: ["-run"], value: "required" },        // "none" (default), "required", "optional"
+        { names: ["-covermode"], value: "required", values: ["set", "count", "atomic"] }
+      ]
+    },
+    "mod tidy": { options: [{ names: ["-v"] }] },      // a path; "mod" must be a key too
+    "mod": {}
+  }
+}
+command { "go" } on #golang:1.25 schema { "go": go_schema }
+
+$ go tset ./...          // E-TYPE-COMMAND-OPTION: 'go' has no subcommand 'tset'
+$ go test -run           // E-TYPE-COMMAND-OPTION: requires a value
+$ go mod tidy -x         // W-COMMAND-OPTION: "mod tidy" is not closed, so only advised
+```
+
+A schema is written with literals and references to top-level values — no calls — and its binding is annotated `: CommandSchema`. Only commands whose environment dispatch chose are checked (not `$[env] go ...`), and checking stops at a word it cannot read: `$FLAGS`, `$(...)`, a hole in place of an option, `--`. The editor completes and describes options, subcommands and values from the schema. → [5](/reference/spec#5-declarations-and-modules)
 
 ## Concurrency
 
@@ -376,7 +408,7 @@ publish(--tag: String = "latest"): String =
 | Strings | `length` `concat` `trim` `to_lower` `to_upper` `split` `join` `replace` `contains` `starts_with` `ends_with` `index_of` `substring` `pad_start` `pad_end` `repeat` `lines` `to_string` `to_number` `regex_test` `regex_match` `regex_replace` |
 | Arrays | `map` `filter` `reduce` `for_each` `append` `concat_array` `size` `is_empty` `first` `last` `slice` `take` `drop` `reverse` `sort` `sort_by` `contains_array` `index_of_array` `find` `find_index` `every` `any` `flatten` `flat_map` `zip` `unique` `range` `enumerate` |
 | Maps | `get` `get_or` `has_key` `keys` `values` `set` `remove` `merge` `entries` `from_entries` `map_values` |
-| Commands | `run` `shell_quote` `raw` |
+| Commands | `run` `shell_quote` |
 | Async | `spawn` `await` `all` `race` |
 | Errors | `recover` `fail` `error` `retry` `retry_if` `until` `timeout` `backoff_fixed` `backoff_linear` `backoff_exponential` |
 | Data | `to_json` `from_json` `encode` `decode` `cast` `base64_encode` `base64_decode` `sha256` `md5` |

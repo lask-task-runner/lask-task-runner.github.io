@@ -153,14 +153,14 @@ More: [Input, output and secrets](/language/io-and-secrets), which also covers s
 A project can import modules from another repository. `lask deps add` records a dependency in `lask.json` (a Git URL and a tag or commit, or a URL), and `lask sync` fetches it into `.lask/` in the project directory and records its hash in the lock file. `import` then refers to it by name:
 
 ```bash
-lask deps add tools --git https://github.com/lask-task-runner/lask-module-tools.git --rev v0.3.2
+lask deps add tools --git https://github.com/lask-task-runner/lask-module-tools.git --rev v0.5.0
 ```
 
 ```lask
 import * as tools from "tools"
 
-// The Go version in the image tools.go() returns.
-go_version() = $[tools.go()] go version
+// The Go version in the image tools.go.env() returns.
+go_version() = $[tools.go.env()] go version
 ```
 
 ```text
