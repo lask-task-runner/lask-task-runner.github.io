@@ -55,7 +55,7 @@ internal module_help(tools_src: String) = do {
     ref = get_or(v, "tools", "")
     case {
       ref == "" -> "no module reference for #{v["version"]}"
-      else -> $[#local] sh scripts/module-help.sh #{shell_quote(tools_src)} #{shell_quote(ref)} #{shell_quote(".module-help/tools-#{ref}")}
+      else -> $[#local] sh scripts/module-help.sh #{tools_src} #{ref} #{".module-help/tools-#{ref}"}
     }
   }
 }

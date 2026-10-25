@@ -62,8 +62,17 @@ function sectionsOf(md, level) {
   return out.map((s) => ({ ...s, body: s.body.join("\n") }));
 }
 
+// A table names a function (`aws`, before tools was namespaced), a
+// namespace (`aws`, whose functions are aws.env, aws.setup, ...), or a
+// function of one (`aws.setup`).
+const membersOf = (n) =>
+  help[n]
+    ? [n]
+    : Object.keys(help)
+        .filter((k) => k.startsWith(n + "."))
+        .sort((a, b) => (a.endsWith(".env") ? -1 : b.endsWith(".env") ? 1 : a.localeCompare(b)));
 const tableNames = (body) =>
-  [...body.matchAll(/^\| `([a-z_][a-z0-9_]*)` \|/gm)].map((m) => m[1]).filter((n) => help[n]);
+  [...body.matchAll(/^\| `([a-z_][a-z0-9_.]*)` \|/gm)].flatMap((m) => membersOf(m[1]));
 
 const top = sectionsOf(readme, 2);
 const catalog = top.find((s) => s.title === "Catalog")?.body ?? "";
