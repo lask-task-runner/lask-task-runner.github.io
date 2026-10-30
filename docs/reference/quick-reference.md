@@ -58,6 +58,7 @@ $ lask run release --help
 | `lask deps graph [name] [--depth n]` | The dependency graph from the entry module; with a name, only the paths that reach it. |
 | `lask deps add \| rm <name>` | Add a dependency (`--git <url> --rev <rev>` or `--url <url>`); remove one no module imports. |
 | `lask envs list [fn]` | The environments a module uses, the image the lock pins each to, what requires it, and whether it is on the Docker daemon. |
+| `lask envs commands [--verbose] [fn]` | The programs the module's commands run in each environment, and which tasks run them; `--verbose` lists each command, where it is written. Commands whose environment a caller passes are under `(dynamic)`. |
 | `lask secrets list \| check [fn]` | List the secret references in the environment; check that their stores can be reached and read. |
 | `lask check` | Static validation only. Nothing is evaluated, no image is pulled. |
 | `lask fmt [--check] [path...]` | Format the project's `.lask` files in place, listing the files it changed; `--check` changes nothing and fails if a file is not formatted (CI); `--stdin` formats standard input. |
