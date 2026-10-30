@@ -202,6 +202,7 @@ When only file rules remain, keep them and call Make from the task that needs th
 | `$(VAR)` | `#{var}` |
 | `VAR ?= default`, `make t VAR=x` | `t(--var = "default")`, `lask run t --var x` |
 | `VAR ?= $(ENV_VAR)` | `--var = get_env_or("ENV_VAR", "default")` |
+| `$(if $(VAR),,$(error VAR is required))` | `t(--var: String)` — no default, so it must be given |
 | `VAR := $(shell cmd)` | `var = $ cmd` (top level, evaluated once on first use) |
 | `$$HOME` | `$HOME` — only `#{...}` is Lask's |
 | `target: dep1 dep2` | call `dep1()` and `dep2()` in the body |
@@ -228,7 +229,9 @@ $ lask run deploy --evn prod    # error: unknown parameter
 
 When a value really should come from the environment, say so in the default: `--region = get_env_or("AWS_REGION", "us-east-1")`. Use `get_env` instead when the variable is required, so that a missing one fails with its name.
 
-Parameters keep their `_` in the code and take `-` on the command line: `build(--dry_run = false)` is `lask run build --dry-run true`.
+A parameter declared without a default, `deploy(--env: String)`, is required: `lask run deploy` without `--env` stops with an error before anything runs, which replaces the `ifndef ... $(error ...)` guard of a Makefile.
+
+Parameters keep their `_` in the code and take `-` on the command line: `build(--dry_run = false)` is `lask run build --dry-run`. A `Bool` parameter is a flag, so `--dry-run` alone is `true`.
 
 ### Prerequisites are calls, and each call runs
 
