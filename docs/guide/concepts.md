@@ -73,6 +73,18 @@ In a container, Lask:
 
 A `#local` command runs on the host, also in the project directory.
 
+Because each command gets a new container, anything a command leaves outside `/work` is gone by the next one. That includes a package it installed and a server it started in the background. To run several commands in one container, use `with_container`:
+
+```lask
+test_api(): String = with_container(#node:24.21.0-alpine3.24{workdir: "/work/api"}, \(box) -> do {
+  $[box] apk add --no-cache curl
+  $[box] npm start > /tmp/server.log 2>&1 &
+  $[box] npm test
+})
+```
+
+Every command run with `box` runs in the same container, and Lask removes that container when the body finishes, however it finishes. Each command still gets its own shell, so a `cd` or an `export` doesn't carry over to the next command. Set the working directory and environment variables as run options instead, as `workdir` is set above. More: [Environments](/language/environments).
+
 While a command runs, its output is copied to stderr as the **command log**, one line at a time:
 
 ```text

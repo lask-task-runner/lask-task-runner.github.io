@@ -252,6 +252,18 @@ The head is the only place an image is named — no string or variable can name 
 
 `#head{...}` is sugar for `runnable(#head, ...)`, which turns an `Environment` into a `Runnable`. An `Environment` is a `Runnable` with no options, so `$[...]`, `run` and `command ... on` take either. `runnable` takes an `Environment` only: options are given once. A function can take the image as `--image: Environment = #python:3.12` and return `runnable(image, env = {...})`, so a caller picks the version with `python(image = #python:3.13)`. → [6.7](/reference/spec#67-environment-expressions), [15.5](/reference/spec#155-command-execution-functions)
 
+**One container for several commands.** Each `$[image]` starts a new container, so a file a command writes outside `/work`, a package it installs or a process it leaves running is gone by the next command. `with_container` keeps one container for the length of its body:
+
+```lask
+with_container(#alpine:3.20{workdir: "/work/api", env: {"CI": "1"}}, \(box) -> do {
+  $[box] apk add --no-cache curl         // still there for the next line
+  $[box] ./server > /tmp/log 2>&1 &      // still running for the next line
+  $[box] curl -fs localhost:8080/health
+})                                       // container removed here, however the body ends
+```
+
+`box` is a `Runnable`, so `$[box]`, `run(box, ...)` and the filesystem functions take it. Each command is still a shell of its own, so a `cd` or an `export` ends with it: give `workdir` and `env` as run options. Using `box` after the body has returned is `E-RUNTIME-SESSION-CLOSED`, and so is a command still running in it then. Given `#local`, the body gets `#local` itself. → [15.5](/reference/spec#155-command-execution-functions)
+
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 
 ```lask
@@ -409,7 +421,7 @@ publish(--tag: String = "latest"): String =
 | Strings | `length` `concat` `trim` `to_lower` `to_upper` `split` `join` `replace` `contains` `starts_with` `ends_with` `index_of` `substring` `pad_start` `pad_end` `repeat` `lines` `to_string` `to_number` `regex_test` `regex_match` `regex_replace` |
 | Arrays | `map` `filter` `reduce` `for_each` `append` `concat_array` `size` `is_empty` `first` `last` `slice` `take` `drop` `reverse` `sort` `sort_by` `contains_array` `index_of_array` `find` `find_index` `every` `any` `flatten` `flat_map` `zip` `unique` `range` `enumerate` |
 | Maps | `get` `get_or` `has_key` `keys` `values` `set` `remove` `merge` `entries` `from_entries` `map_values` |
-| Commands | `run` `shell_quote` |
+| Commands | `run` `shell_quote` `with_container` |
 | Async | `spawn` `await` `all` `race` |
 | Errors | `recover` `fail` `error` `retry` `retry_if` `until` `timeout` `backoff_fixed` `backoff_linear` `backoff_exponential` |
 | Data | `to_json` `from_json` `encode` `decode` `cast` `base64_encode` `base64_decode` `sha256` `md5` |
@@ -430,6 +442,7 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 - A command with no environment is an error, never the host. `#local` is something you write.
 - A command string swallows the rest of its line, closing brackets included, so a `$` command cannot sit inside a call's parentheses. Bind it to a name on its own line first.
 - A command runs as `/bin/sh -c <string>` in its container, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
+- Each command gets a new container: what it leaves outside `/work` is gone by the next one. To keep it, run the commands in one `with_container`.
 - `lask run` writes nothing to stdout: the return value is not printed, and the command log goes to stderr. To see the value, use `lask eval`.
 - A `Bool` parameter is a flag on the command line: a bare `--verbose` is `true`. The word after it is its value only when it is `true` or `false`, so a positional argument that is the text `true` cannot directly follow a flag.
 - A task that refers to `stdin` reads it to the end before it starts. Started from a script that leaves stdin open, it waits; give it `</dev/null`. A task that never refers to `stdin` does not read it.
