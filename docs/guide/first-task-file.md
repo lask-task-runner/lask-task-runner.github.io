@@ -253,21 +253,16 @@ stack trace (innermost first):
 
 ## Step 6: an option from the command line
 
-`lint(--fix = false)` declares a keyword parameter. Its type, `Bool`, is inferred from the default. On the command line, it takes a value:
+`lint(--fix = false)` declares a keyword parameter. Its type, `Bool`, is inferred from the default. On the command line, a `Bool` parameter is a flag: `--fix` on its own sets it to `true`.
 
 ```text
-$ lask run lint --fix true
+$ lask run lint --fix
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:1] $ ruff check --fix app
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:1] 1| Found 1 error (1 fixed, 0 remaining).
 [#ghcr.io/astral-sh/ruff:0.13.3-alpine:1] exit 0
 ```
 
-A `Bool` option is not a bare flag. `--fix` without a value is a usage error, and `--fix=true` works as well as `--fix true`:
-
-```text
-$ lask run lint --fix
-E-CLI-USAGE: keyword argument '--fix' needs a value
-```
+`--fix true`, `--fix false` and `--fix=false` work as well. A flag takes the word after it as its value only when that word is `true` or `false`; any other word is the next argument.
 
 The comment above `lint` is its help. The first line is the summary, and `@param` describes a parameter:
 
@@ -276,7 +271,7 @@ $ lask run lint --help
 lint - Check the code with ruff.
 
 Usage:
-  lask run lint [--fix <Bool>]
+  lask run lint [--fix]
 
 Parameters:
   --fix : Bool = false

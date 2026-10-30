@@ -206,13 +206,14 @@ All of these exit with code 4, before anything runs:
 
 ```text
 E-CLI-USAGE: no such function: 'hellp'
-E-CLI-USAGE: keyword argument '--fix' needs a value
+E-CLI-USAGE: keyword argument '--target' needs a value
+E-CLI-USAGE: missing keyword argument: '--target'
 E-CLI-USAGE: keyword argument '--fix' 'maybe' does not fit the parameter type: expected Bool, got String
 E-CLI-USAGE: unknown keyword argument: '--fixx'
 E-CLI-USAGE: too many positional arguments: expected 0, got 1
 ```
 
-`lask run --help` lists the tasks and `lask run <task> --help` shows a task's parameters. A `Bool` parameter takes a value: `--fix true`, or `--fix=true`. Options for `lask` itself, such as `--module`, go before the task name; everything after it belongs to the task.
+`lask run --help` lists the tasks and `lask run <task> --help` shows a task's parameters. A keyword parameter declared without a default, such as `--target: String`, must be given. A `Bool` parameter is a flag: `--fix` on its own is `true`, and `--fix false` or `--fix=false` sets it to `false`. Options for `lask` itself, such as `--module`, go before the task name; everything after it belongs to the task.
 
 ### `lask` starts and nothing happens
 

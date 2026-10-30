@@ -102,7 +102,9 @@ While a command runs, its output is copied to stderr as the **command log**, one
 
 In all of them, logs, the command log and errors go to stderr. Because `run` keeps stdout empty and `eval` prints only the value, you can pipe one task into another: `lask eval a | lask run b`, where `b` reads `stdin`.
 
-A task's parameters are its command-line arguments. `deploy(target: String, --dry_run = false)` is called as `lask run deploy prod --dry-run true`. Positional parameters come first, then keyword parameters by name, and `-` and `_` in names are interchangeable. Options for `lask` itself, such as `--module`, go before the task name.
+A task's parameters are its command-line arguments. `deploy(target: String, --dry_run = false)` is called as `lask run deploy prod --dry-run`. Positional parameters come first, then keyword parameters by name, and `-` and `_` in names are interchangeable. A `Bool` keyword parameter is a flag: on its own it is `true`, and `--dry-run false` sets it explicitly. Options for `lask` itself, such as `--module`, go before the task name.
+
+A keyword parameter without a default is required. `deploy(--region: String)` must be called with `--region`, and leaving it out is an error before anything runs. Use one for a value that has no sensible default, but that reads better by name than by position.
 
 More: [Documentation and the command line](/language/docs-and-cli), [Input, output and secrets](/language/io-and-secrets).
 
@@ -136,7 +138,7 @@ $ API_TOKEN=s3cr3t-value lask run publish
 2026-10-08T17:01:24.371Z [#alpine:3.22.2:1] $ sh -c 'echo "token has ${#API_TOKEN} characters: $API_TOKEN"'
 2026-10-08T17:01:24.532Z [#alpine:3.22.2:1] 1| token has 12 characters: ***
 2026-10-08T17:01:24.838Z [#alpine:3.22.2:1] exit 0
-$ lask eval publish --dry-run true
+$ lask eval publish --dry-run
 2026-10-08T17:01:24.256Z info publishing, dry run: true
 "would publish"
 ```

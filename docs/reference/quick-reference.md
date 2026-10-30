@@ -24,7 +24,7 @@ command { "git" } on #local
 // Run both suites concurrently, then build.
 //
 // @param dry_run  Report what would happen instead of building.
-// @example lask run release --dry-run true
+// @example lask run release --dry-run
 release(--dry_run = false): String = do {
   api = async $ go test ./...
   web = async $ npm test
@@ -68,7 +68,7 @@ $ lask run release --help
 
 Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask`), `--format text\|json`, `--stdout-encode text\|json\|pretty-json` (default `json`), `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
 
-A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run true`, and `show_version` as `lask run show-version`.
+A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run`, and `show_version` as `lask run show-version`. A `Bool` keyword parameter is a flag: on its own it is `true`, and it takes the next word as its value only when that is `true` or `false`.
 
 A task can ask for a typed confirmation before it runs, declared in `lask.json` rather than in code. It is a guard against mistakes, not a security boundary. `lask check` rejects an entry that names no function, parameter or fitting value. → [ch. 5](/reference/spec#5-declarations-and-modules), [11.2](/reference/spec#112-function-invocation)
 
@@ -173,9 +173,9 @@ Records have a statically fixed field set and an absent optional key reads as nu
 f(a, b, ...rest: Array<Number>, --opt: String = "x") = [a, b, rest, opt]
 ```
 
-Positional parameters are required and take no default. Keyword parameters (`--name`) **must** have a default and are bound only by name — `f(1, opt = "y")` in the language, `--opt y` on the CLI. At most one variadic parameter, right after the positional ones; it collects what is left over, as `Array<T>`.
+Positional parameters are required and take no default. Keyword parameters (`--name`) are bound only by name — `f(1, opt = "y")` in the language, `--opt y` on the CLI. A keyword parameter with a default is optional; one without, `--target: String`, is required, and a call that leaves it out is an error. At most one variadic parameter, right after the positional ones; it collects what is left over, as `Array<T>`.
 
-Declaration order is enforced: positional, variadic, keyword. `f(x) = body` is sugar for `f = \(x) -> body`. Calling through a *function value* loses the parameter list: positional arguments only, every keyword parameter defaulted.
+Declaration order is enforced: positional, variadic, keyword. `f(x) = body` is sugar for `f = \(x) -> body`. Calling through a *function value* loses the parameter list: positional arguments only, every keyword parameter defaulted. A function with a required keyword parameter therefore cannot be used as a value, only called.
 
 A declaration may bind type parameters before its parameter list ([Types](#types)); a default that mentions one must hold for every instantiation, so `--xs: Array<T> = []` is legal and `--y: T = 1` is not.
 
@@ -431,10 +431,10 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 - A command string swallows the rest of its line, closing brackets included, so a `$` command cannot sit inside a call's parentheses. Bind it to a name on its own line first.
 - A command runs as `/bin/sh -c <string>` in its container, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
 - `lask run` writes nothing to stdout: the return value is not printed, and the command log goes to stderr. To see the value, use `lask eval`.
-- A `Bool` parameter takes a value on the command line: `--verbose true`, never a bare `--verbose`.
+- A `Bool` parameter is a flag on the command line: a bare `--verbose` is `true`. The word after it is its value only when it is `true` or `false`, so a positional argument that is the text `true` cannot directly follow a flag.
 - A task that refers to `stdin` reads it to the end before it starts. Started from a script that leaves stdin open, it waits; give it `</dev/null`. A task that never refers to `stdin` does not read it.
 - Conformance is invariant: `Array<Number>` is not an `Array<Any>`.
-- Keyword parameters must have defaults; positional parameters must not.
+- Positional parameters cannot have defaults. A keyword parameter without one is required, and a function with a required keyword parameter cannot be passed as a value.
 - `for` takes an array, not a number and not a map.
 - Interpolating a `String | Null` is a type error — resolve it with `case` first.
 - `a?: T` and `a: T | Null` are different questions: the first is about the key, the second about the value.
