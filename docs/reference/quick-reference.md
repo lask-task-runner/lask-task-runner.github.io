@@ -59,6 +59,9 @@ $ lask run release --help
 | `lask deps add \| rm <name>` | Add a dependency (`--git <url> --rev <rev>` or `--url <url>`); remove one no module imports. |
 | `lask envs list [fn]` | The environments a module uses, the image the lock pins each to, what requires it, and whether it is on the Docker daemon. |
 | `lask envs commands [--verbose] [fn]` | The programs the module's commands run in each environment, and which tasks run them; `--verbose` lists each command, where it is written. Commands whose environment a caller passes are under `(dynamic)`. |
+| `lask envs files [--verbose] [fn]` | The host files each environment's commands may read or write: every mount, with `rw`, `ro` or `none`; `--verbose` adds the files the filesystem functions name. `!` marks what reaches past the project directory. |
+| `lask envs network [fn]` | The network each environment's commands are on, the ports they publish, and how names resolve. |
+| `lask envs access [fn]` | Both in one line per environment, with `CHECK`: what the `within` constraints covering it find (`ok`, `exceeded`, `unproven`). |
 | `lask secrets list \| check [fn]` | List the secret references in the environment; check that their stores can be reached and read. |
 | `lask check` | Static validation only. Nothing is evaluated, no image is pulled. |
 | `lask fmt [--check] [path...]` | Format the project's `.lask` files in place, listing the files it changed; `--check` changes nothing and fails if a file is not formatted (CI); `--stdin` formats standard input. |
@@ -248,7 +251,7 @@ runnable(e, memory = "8g")      // the same for an Environment value e
 
 The head is the only place an image is named — no string or variable can name one — so every image a program uses is found by reading its source, and `lask sync` pins each. A registry reference may leave out its tag — a bare name means `latest` — since the lock pins the digest it resolved to, and runs use that. A recipe path starts with `.` and is relative to the module's directory, inside its own tree.
 
-**Image options** in parentheses decide which image is used: `platform`, and `context` and `build_args` on a recipe. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `dns`, `dns_search`, `add_hosts`, `publish`; `volumes`. Environment variable names are not `lower_id`, so quote them: `env: {"CI": "1"}`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
+**Image options** in parentheses decide which image is used: `platform`, and `context` and `build_args` on a recipe. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `dns`, `dns_search`, `add_hosts`, `publish`; `base_mount`, `base_access`, `volumes`. Environment variable names are not `lower_id`, so quote them: `env: {"CI": "1"}`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
 
 `#head{...}` is sugar for `runnable(#head, ...)`, which turns an `Environment` into a `Runnable`. An `Environment` is a `Runnable` with no options, so `$[...]`, `run` and `command ... on` take either. `runnable` takes an `Environment` only: options are given once. A function can take the image as `--image: Environment = #python:3.12` and return `runnable(image, env = {...})`, so a caller picks the version with `python(image = #python:3.13)`. → [6.7](/reference/spec#67-environment-expressions), [15.5](/reference/spec#155-command-execution-functions)
 
@@ -263,6 +266,25 @@ with_container(#alpine:3.20{workdir: "/work/api", env: {"CI": "1"}}, \(box) -> d
 ```
 
 `box` is a `Runnable`, so `$[box]`, `run(box, ...)` and the filesystem functions take it. Each command is still a shell of its own, so a `cd` or an `export` ends with it: give `workdir` and `env` as run options. Using `box` after the body has returned is `E-RUNTIME-SESSION-CLOSED`, and so is a command still running in it then. Given `#local`, the body gets `#local` itself. → [15.5](/reference/spec#155-command-execution-functions)
+
+**What a container reaches.** The project directory is mounted read-write at `/work` unless `base_access` narrows it or `base_mount` moves it; the network is Docker's default, which reaches anywhere, unless `network: "none"`. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
+
+```lask
+#node:24{base_access: { ".": "ro", "dist": "rw", ".env": "none" }} // read-only, dist writable, .env hidden
+#golang:1.25{base_mount: "/src"}                                  // mounted, and started, at /src
+```
+
+A table's `"."` is required, and the longest key wins. A path given `rw` or `ro` must exist and stay inside the project directory, links followed, or the command does not run.
+
+**Constraining it with `within`.** A function, or a whole module, can state the most its commands may reach, and `lask check` holds it to that before anything runs. → [10.11](/reference/spec#1011-access-constraints)
+
+```lask
+within { volumes: false }                      // the module: every declaration in it
+
+build() within { files: { ".": "ro", "dist": "rw" }, network: "none" } = $[node] npm run build
+```
+
+The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"` or `"default"`) and `publish` (`false`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
 
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 
@@ -443,6 +465,8 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 - A command string swallows the rest of its line, closing brackets included, so a `$` command cannot sit inside a call's parentheses. Bind it to a name on its own line first.
 - A command runs as `/bin/sh -c <string>` in its container, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
 - Each command gets a new container: what it leaves outside `/work` is gone by the next one. To keep it, run the commands in one `with_container`.
+- A container can write to the whole project directory by default. `base_access: "ro"` makes it read-only; `within` makes `lask check` refuse a command that could write more than you allow.
+- `within` is checked without running anything, so the run options it depends on have to be known from the source. One read with `get_env` is `E-TYPE-WITHIN-UNPROVEN`. One that comes from a task's argument is checked when `lask run` is given it, before the task starts.
 - `lask run` writes nothing to stdout: the return value is not printed, and the command log goes to stderr. To see the value, use `lask eval`.
 - A `Bool` parameter is a flag on the command line: a bare `--verbose` is `true`. The word after it is its value only when it is `true` or `false`, so a positional argument that is the text `true` cannot directly follow a flag.
 - A task that refers to `stdin` reads it to the end before it starts. Started from a script that leaves stdin open, it waits; give it `</dev/null`. A task that never refers to `stdin` does not read it.

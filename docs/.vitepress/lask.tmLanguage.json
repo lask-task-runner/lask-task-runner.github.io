@@ -131,6 +131,11 @@
           "match": "\\b(?:import|export|internal|from|as|type|command)\\b"
         },
         {
+          "comment": "`within` is a keyword only before the brace of an access constraint (spec 3.3, 5).",
+          "name": "keyword.other.lask",
+          "match": "(?<![.\\w])within(?=\\s*\\{)"
+        },
+        {
           "name": "keyword.other.on.lask",
           "match": "(?<=\\})\\s*(on)\\b",
           "captures": { "1": { "name": "keyword.other.lask" } }
