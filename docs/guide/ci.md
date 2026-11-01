@@ -61,8 +61,8 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install Lask
         env:
-          LASK_VERSION: v0.14.0
-          LASK_SHA256: 17ef059ae8a39e7e35e7fb89eb892e6e7e3c5f38a39b7fbf3ea4b1453d90ee16
+          LASK_VERSION: v0.15.0
+          LASK_SHA256: 6ba0a2a1b6645b41f088eebf3a66fa783bde8b28cc5656250d482a111bfd129e
         run: |
           curl -fsSL -o lask.tar.gz \
             "https://github.com/lask-task-runner/lask/releases/download/${LASK_VERSION}/lask-${LASK_VERSION}-linux-amd64.tar.gz"
@@ -78,7 +78,7 @@ jobs:
 
 Notes on the workflow:
 
-- **Release archives.** Release tags start with `v`, and the archive holds the single `lask` binary. GitHub records the `sha256` of each archive. The value above is for `v0.14.0` on `linux-amd64`; when you change the version, look up the new one with `gh release view <tag> --repo lask-task-runner/lask --json assets`, which lists each archive's `digest`. Other platforms' archives are on the [releases page](https://github.com/lask-task-runner/lask/releases).
+- **Release archives.** Release tags start with `v`, and the archive holds the single `lask` binary. GitHub records the `sha256` of each archive. The value above is for `v0.15.0` on `linux-amd64`; when you change the version, look up the new one with `gh release view <tag> --repo lask-task-runner/lask --json assets`, which lists each archive's `digest`. Other platforms' archives are on the [releases page](https://github.com/lask-task-runner/lask/releases).
 - **Actions pinned by commit.** A tag such as `@v4` can be moved to other code; a commit SHA can't. The comment keeps the version readable.
 - **Images are pulled on every run.** A fresh runner has no images, and `lask sync --frozen` pulls them each time. Pick small images where you can.
 
