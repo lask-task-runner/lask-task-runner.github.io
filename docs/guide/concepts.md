@@ -67,7 +67,7 @@ A `$` with no `[...]` looks at the programs its command line calls (`go` above) 
 
 In a container, Lask:
 
-- mounts the project directory (the one holding the entry module) at `/work`, read-write, and makes `/work` the working directory;
+- mounts the project directory (the one holding the entry module) at `/work`, read-write, and makes `/work` the working directory (the run options `base_access` and `base_mount` [narrow or move it](#what-a-container-can-reach));
 - runs the command with `/bin/sh -c`, so the image must contain `/bin/sh`;
 - starts the container with the image digest the lock file pins, and removes the container when the command ends.
 
@@ -94,6 +94,35 @@ While a command runs, its output is copied to stderr as the **command log**, one
 ```
 
 `1|` is the command's stdout and `2|` its stderr. The number after the environment counts commands within one run, which tells concurrent commands apart.
+
+## What a container can reach
+
+By default a container can read and write the whole project directory, and reach any host on the network. Run options narrow that:
+
+```lask
+// The project read-only, dist writable, .env hidden, and no network.
+node = #node:24.21.0-alpine3.24{
+  base_access: { ".": "ro", "dist": "rw", ".env": "none" },
+  network: "none"
+}
+```
+
+`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host.
+
+`lask envs files`, `lask envs network` and `lask envs access` list, for each environment a task's commands may run in, the host paths it may read or write and the network it is on, without running anything.
+
+**`within`** states the most a function's commands may reach, and `lask check` refuses the project if any command it can reach could do more. It is written after the return type, or once at the top of a module for every declaration in it:
+
+```lask
+within { volumes: false }
+
+build(): String within { files: { ".": "ro", "dist": "rw" }, network: "none" } = do {
+  $[node] npm run build
+  read_file("dist/manifest.json", node)
+}
+```
+
+The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
 
 ## check, sync and the lock file
 
