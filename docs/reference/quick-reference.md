@@ -62,6 +62,7 @@ $ lask run release --help
 | `lask envs files [--verbose] [fn]` | The host files each environment's commands may read or write: every mount, with `rw`, `ro` or `none`; `--verbose` adds the files the filesystem functions name. `!` marks what reaches past the project directory. |
 | `lask envs network [fn]` | The network each environment's commands are on, the ports they publish, and how names resolve. |
 | `lask envs access [fn]` | Both in one line per environment, with `CHECK`: what the `within` constraints covering it find (`ok`, `exceeded`, `unproven`). |
+| `lask envs secrets [fn]` | Each `!!` secret, how it reaches a container (`env NAME`, `option name`, `command` or `file`), the container's network, and `CHECK`. `!` marks a secret on a command line, and a network that reaches anywhere. |
 | `lask secrets list \| check [fn]` | List the secret references in the environment; check that their stores can be reached and read. |
 | `lask check` | Static validation only. Nothing is evaluated, no image is pulled. |
 | `lask fmt [--check] [path...]` | Format the project's `.lask` files in place, listing the files it changed; `--check` changes nothing and fails if a file is not formatted (CI); `--stdin` formats standard input. |
@@ -284,7 +285,7 @@ within { volumes: false }                      // the module: every declaration 
 build() within { files: { ".": "ro", "dist": "rw" }, network: "none" } = $[node] npm run build
 ```
 
-The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"` or `"default"`) and `publish` (`false`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
+The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"` or `"default"`), `publish` (`false`) and `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
 
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 
@@ -399,11 +400,14 @@ A strategy is the array of delays, so its length bounds the attempts: `backoff_f
 
 ```lask
 deploy(--key!!: String = get_env("AWS_SECRET_ACCESS_KEY")) = do {
-  $[#amazon/aws-cli:2.31.9] aws configure set aws_secret_access_key #{key}
+  aws = #amazon/aws-cli:2.31.9{env: {"AWS_SECRET_ACCESS_KEY": key}}
+  $[aws] aws sts get-caller-identity
 }
 ```
 
 `!!` marks a binding secret: the value is masked in the command execution log wherever it later appears. It is allowed on `String` and `String | Null` — a `null` registers nothing, so a secret can default to `null` like any optional parameter — carries no meaning in the type system, and never masks a `CommandResult` or `eval`'s own output. → [12.8](/reference/spec#128-protection-of-sensitive-information-and-retention-policy)
+
+A secret is given to a container in `env`. Written into a command string, as `#{key}`, it is on a command line of the host, which `lask check` warns of (`W-SECRET-COMMAND-LINE`). `lask envs secrets` lists where each secret goes, and `within { secrets: [key] }` makes `lask check` refuse any other: it names the secrets a function's commands may be given, by their `!!` names, and admits them only in `env`. → [10.11](/reference/spec#1011-access-constraints)
 
 A variable whose whole value is a secret reference is resolved when `get_env`, `find_env` or `get_env_or` reads it, and the value is masked like a `!!` one. The program stays the same; only the environment changes. `LASK_SECRETS` lists the stores a run may use. `lask secrets check [fn]` tells you whether they can be reached and read before a task runs. → [9.8](/reference/spec#98-secret-references), [11.10](/reference/spec#1110-secret-references-secrets)
 
@@ -466,6 +470,7 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 - A command runs as `/bin/sh -c <string>` in its container, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
 - Each command gets a new container: what it leaves outside `/work` is gone by the next one. To keep it, run the commands in one `with_container`.
 - A container can write to the whole project directory by default. `base_access: "ro"` makes it read-only; `within` makes `lask check` refuse a command that could write more than you allow.
+- `!!` masks a secret in the log, not on the machine: written into a command string, it is on a command line every user of the host can read. Give it in `env`, and read the variable in the command.
 - `within` is checked without running anything, so the run options it depends on have to be known from the source. One read with `get_env` is `E-TYPE-WITHIN-UNPROVEN`. One that comes from a task's argument is checked when `lask run` is given it, before the task starts.
 - `lask run` writes nothing to stdout: the return value is not printed, and the command log goes to stderr. To see the value, use `lask eval`.
 - A `Bool` parameter is a flag on the command line: a bare `--verbose` is `true`. The word after it is its value only when it is `true` or `false`, so a positional argument that is the text `true` cannot directly follow a flag.

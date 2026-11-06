@@ -189,6 +189,42 @@ $ lask eval publish --dry-run
 - Pass secrets through the environment, not as `--token` on the command line, where other processes and your shell history can see them.
 - A value of 8 characters or more is masked wherever it appears in the log. A shorter one is masked only where it stands as a word of its own, so a one-letter token doesn't mask that letter inside other words.
 
+### Where a secret goes
+
+Masking hides a secret in the log, not from the machine. A secret written into a command string, as `$[alpine] echo #{token}`, is part of the command line Lask starts `docker` with, which every user of the host can read in its process list. Lask follows each `!!` value, through every function it is passed to, to the containers it reaches, without running anything, so it can tell you where that happens.
+
+`lask check` warns of a secret in a command string, or in a run option other than a value of `env`:
+
+```lask
+// Don't: the token is written into the command.
+leak(--token!!: String = get_env_or("API_TOKEN", "")): String = $[#alpine:3.22.2] echo #{token}
+```
+
+```text
+main.lask:18:65-18:96: W-SECRET-COMMAND-LINE [static]: the secret 'main.lask: leak --token' is in the command string, which is given to the engine client and the shell on a command line of the host; give it in 'env' and read the variable in the command
+```
+
+`lask envs secrets` lists every secret, how it reaches a container, and that container's network. `!` marks a secret on a command line, and a container that may send it anywhere:
+
+```text
+$ lask envs secrets
+SECRET                      CHANNEL        ENVIRONMENT          NETWORK    CHECK  REQUIRED BY
+main.lask: publish --token  env API_TOKEN  #alpine:3.22.2{env}  default !  ok     main.lask: publish
+main.lask: leak --token     command !      #alpine:3.22.2       default !  —      main.lask: leak
+```
+
+**`within { secrets: [...] }`** makes it a rule. It names the secrets a function's commands may be given, by the names they are marked with `!!` — the function's own parameters and bindings, and its module's values — and admits them only in `env`:
+
+```lask
+publish(--dry_run = false, --token!!: String = get_env_or("API_TOKEN", "")): String within { secrets: [token] } = do {
+  ...
+}
+```
+
+`lask check` then refuses the project if `token` could reach a command string, a secret it does not name could reach a container, or a name in the list is not a secret binding. `within { secrets: false }` admits none. A function that takes a secret from its caller marks the parameter, `show(v!!: String) within { secrets: [v] }`, and names it by that: a secret keeps every name it is bound to on its way.
+
+The analysis sees only what is marked: a value read with `get_env` that is not bound with `!!` is not followed. A value that has passed through a function that returns a `Bool` or a `Number`, such as `length(token)`, is not a secret any more. More: [Secret flow](/reference/spec#1011-access-constraints).
+
 More: [Input, output and secrets](/language/io-and-secrets), which also covers secret references such as `{vault://secret/app#token}`.
 
 ## Dependencies
