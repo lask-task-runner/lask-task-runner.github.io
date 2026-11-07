@@ -109,7 +109,28 @@ node = #node:24.21.0-alpine3.24{
 
 `base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host.
 
-`lask envs files`, `lask envs network` and `lask envs access` list, for each environment a task's commands may run in, the host paths it may read or write and the network it is on, without running anything.
+**`egress`** lets a container reach only the destinations it lists, as `<host>:<port>`:
+
+```lask
+curl = #curlimages/curl:8.17.0{egress: ["example.com:443", "*.github.com:443"]}
+```
+
+The container runs on a network with no route out, next to a proxy that Lask starts. The proxy forwards only to what the list names. Lask sets `HTTPS_PROXY` and the other proxy variables, which most tools read, so nothing in the task changes. A program that ignores them reaches nothing at all. Each destination the proxy refuses appears in the command log:
+
+```text
+2026-11-06T13:44:15.671Z [#curlimages/curl:8.17.0:1] $ curl -s -o /dev/null -w "%{http_code}" --max-time 5 https://github.com/
+2026-11-06T13:44:15.785Z [#curlimages/curl:8.17.0:1] 1| 000
+2026-11-06T13:44:15.785Z [#curlimages/curl:8.17.0:1] exit 56
+2026-11-06T13:44:15.796Z [#curlimages/curl:8.17.0:1] 2| egress denied: github.com:443
+```
+
+`*.github.com` covers `api.github.com` but not `github.com` itself, and the port is always written. `[]` reaches nothing. Leaving `egress` out, or setting it to `null`, leaves the network as it was. `lask sync` pulls the proxy, pinned like any other image. A JVM reads no proxy variable, so [lask-module-tools](/modules/tools/)' `java`, `maven` and `gradle` pass it the proxy themselves, and `node`, `python`, `go`, `maven` and `gradle` export `registry_egress`, the hosts of their default registry:
+
+```lask
+$[tools.node.env(egress = tools.node.registry_egress)] npm ci
+```
+
+`lask envs files`, `lask envs network` and `lask envs access` list, for each environment a task's commands may run in, the host paths it may read or write and the network it is on, without running anything. `lask envs network` shows what `egress` lists in its `EGRESS` column.
 
 **`within`** states the most a function's commands may reach, and `lask check` refuses the project if any command it can reach could do more. It is written after the return type, or once at the top of a module for every declaration in it:
 
@@ -122,7 +143,7 @@ build(): String within { files: { ".": "ro", "dist": "rw" }, network: "none" } =
 }
 ```
 
-The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
+`within { network: [...] }` takes `egress` entries, and admits a container whose `egress` they all cover: `["*.github.com:443"]` admits `egress: ["api.github.com:443"]`, and no container on the default network. The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
 
 ## check, sync and the lock file
 
