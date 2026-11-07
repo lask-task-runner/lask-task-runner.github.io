@@ -68,7 +68,7 @@ A `$` with no `[...]` looks at the programs its command line calls (`go` above) 
 In a container, Lask:
 
 - mounts the project directory (the one holding the entry module) at `/work`, read-write, and makes `/work` the working directory (the run options `base_access` and `base_mount` [narrow or move it](#what-a-container-can-reach));
-- runs the command with `/bin/sh -c`, so the image must contain `/bin/sh`;
+- runs the command with `/bin/sh`, so the image must contain `/bin/sh`;
 - starts the container with the image digest the lock file pins, and removes the container when the command ends.
 
 A `#local` command runs on the host, also in the project directory.
@@ -107,9 +107,30 @@ node = #node:24.21.0-alpine3.24{
 }
 ```
 
-`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host.
+`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host. A volume of `/`, of `/proc`, `/sys`, `/dev`, `/etc`, `/root` or `/boot`, of the engine's socket or state, such as `/var/run/docker.sock`, or of a directory holding one of them, such as `/var/run`, gives the container what the host has, and Lask takes it as the host itself, as it does `#local`: no `within` admits it, and `lask envs files` marks it `! (host)`.
 
-`lask envs files`, `lask envs network` and `lask envs access` list, for each environment a task's commands may run in, the host paths it may read or write and the network it is on, without running anything.
+**`egress`** lets a container reach only the destinations it lists, as `<host>:<port>`:
+
+```lask
+curl = #curlimages/curl:8.17.0{egress: ["example.com:443", "*.github.com:443"]}
+```
+
+The container runs on a network with no route out, next to a proxy that Lask starts. The proxy forwards only to what the list names. Lask sets `HTTPS_PROXY` and the other proxy variables, which most tools read, so nothing in the task changes. A program that ignores them reaches nothing at all. Each destination the proxy refuses appears in the command log:
+
+```text
+2026-11-06T13:44:15.671Z [#curlimages/curl:8.17.0:1] $ curl -s -o /dev/null -w "%{http_code}" --max-time 5 https://github.com/
+2026-11-06T13:44:15.785Z [#curlimages/curl:8.17.0:1] 1| 000
+2026-11-06T13:44:15.785Z [#curlimages/curl:8.17.0:1] exit 56
+2026-11-06T13:44:15.796Z [#curlimages/curl:8.17.0:1] 2| egress denied: github.com:443
+```
+
+`*.github.com` covers `api.github.com` but not `github.com` itself, and the port is always written. `[]` reaches nothing. Leaving `egress` out, or setting it to `null`, leaves the network as it was. `lask sync` pulls the proxy, pinned like any other image. A JVM reads no proxy variable, so [lask-module-tools](/modules/tools/)' `java`, `maven` and `gradle` pass it the proxy themselves, and `node`, `python`, `go`, `maven` and `gradle` export `registry_egress`, the hosts of their default registry:
+
+```lask
+$[tools.node.env(egress = tools.node.registry_egress)] npm ci
+```
+
+`lask envs files`, `lask envs network` and `lask envs access` list, for each environment a task's commands may run in, the host paths it may read or write and the network it is on, without running anything. `lask envs network` shows what `egress` lists in its `EGRESS` column.
 
 **`within`** states the most a function's commands may reach, and `lask check` refuses the project if any command it can reach could do more. It is written after the return type, or once at the top of a module for every declaration in it:
 
@@ -122,13 +143,21 @@ build(): String within { files: { ".": "ro", "dist": "rw" }, network: "none" } =
 }
 ```
 
-The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
+`within { network: [...] }` takes `egress` entries, and admits a container whose `egress` they all cover: `["*.github.com:443"]` admits `egress: ["api.github.com:443"]`, and no container on the default network. The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
 
 ## check, sync and the lock file
 
 `lask check` reads the whole project and reports syntax errors, undefined names, wrong argument counts and types, and commands with no environment. It runs nothing, pulls nothing, and does not need Docker. In a project with [dependencies](#dependencies), it needs `lask sync` to have fetched them once; it never fetches them itself.
 
 `lask sync` pulls every image the project uses, builds every image it has a Dockerfile for, fetches any [dependencies](#dependencies), and writes **`lask.lock.json`**. The lock file records the digest of each image and the content hash of each dependency. Commit it: `run` and `eval` use exactly what it pins, and never pull or build anything themselves. A missing image is an error that tells you to run `lask sync`.
+
+A build reaches the network by default, as `docker build` does. A recipe that needs nothing from it can say so, and is built with no network at all:
+
+```lask
+app = #./Dockerfile(build_network = "none")
+```
+
+It is a different image from the same recipe built online, so a lock written for one is not taken for the other, and `lask envs list` shows it as `#./Dockerfile (no network)`. A build cannot be given `egress`: the steps of a build do not run on a network Lask can place them on.
 
 `lask sync --frozen` fails instead of changing the lock file, which is what you want in CI. See [Running in CI](./ci).
 
@@ -188,6 +217,42 @@ $ lask eval publish --dry-run
 - A keyword parameter's default is evaluated before the task starts, even on a dry run that never uses it. With `get_env("API_TOKEN")` as the default, a dry run would fail with `E-RUNTIME-ACCESS: environment variable is not set` when the variable is unset. `get_env_or("API_TOKEN", "")` gives `""` instead, and the task decides what an empty token means. This also covers a CI system that sets the variable to an empty string when the secret is missing.
 - Pass secrets through the environment, not as `--token` on the command line, where other processes and your shell history can see them.
 - A value of 8 characters or more is masked wherever it appears in the log. A shorter one is masked only where it stands as a word of its own, so a one-letter token doesn't mask that letter inside other words.
+
+### Where a secret goes
+
+Masking hides a secret in the log, not from the machine. Lask hands a command string to the container's shell on its standard input, so the string itself is on no command line. The programs the command runs are another matter: in `$[alpine] echo #{token}`, `echo` is given the token as an argument, and on Linux a container's processes are processes of the host, whose process list every user of the host can read. Lask follows each `!!` value, through every function it is passed to, to the containers it reaches, without running anything, so it can tell you where that happens.
+
+`lask check` warns of a secret in a command string, or in a run option other than a value of `env`:
+
+```lask
+// Don't: the token is written into the command.
+leak(--token!!: String = get_env_or("API_TOKEN", "")): String = $[#alpine:3.22.2] echo #{token}
+```
+
+```text
+main.lask:18:65-18:96: W-SECRET-COMMAND-LINE [static]: the secret 'main.lask: leak --token' is in the command string, from which the programs the command runs are given it as arguments, which the host's process list shows; give it in 'env' to a program that reads the variable itself
+```
+
+`lask envs secrets` lists every secret, how it reaches a container, and that container's network. `!` marks a secret on a command line, and a container that may send it anywhere:
+
+```text
+$ lask envs secrets
+SECRET                      CHANNEL        ENVIRONMENT          NETWORK    CHECK  REQUIRED BY
+main.lask: publish --token  env API_TOKEN  #alpine:3.22.2{env}  default !  ok     main.lask: publish
+main.lask: leak --token     command !      #alpine:3.22.2       default !  —      main.lask: leak
+```
+
+**`within { secrets: [...] }`** makes it a rule. It names the secrets a function's commands may be given, by the names they are marked with `!!` — the function's own parameters and bindings, and its module's values — and admits them only in `env`:
+
+```lask
+publish(--dry_run = false, --token!!: String = get_env_or("API_TOKEN", "")): String within { secrets: [token] } = do {
+  ...
+}
+```
+
+`lask check` then refuses the project if `token` could reach a command string, a secret it does not name could reach a container, or a name in the list is not a secret binding. `within { secrets: false }` admits none. A function that takes a secret from its caller marks the parameter, `show(v!!: String) within { secrets: [v] }`, and names it by that: a secret keeps every name it is bound to on its way.
+
+The analysis sees only what is marked: a value read with `get_env` that is not bound with `!!` is not followed. A value that has passed through a function that returns a `Bool` or a `Number`, such as `length(token)`, is not a secret any more. More: [Secret flow](/reference/spec#1011-access-constraints).
 
 More: [Input, output and secrets](/language/io-and-secrets), which also covers secret references such as `{vault://secret/app#token}`.
 

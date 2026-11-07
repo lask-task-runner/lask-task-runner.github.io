@@ -60,8 +60,9 @@ $ lask run release --help
 | `lask envs list [fn]` | The environments a module uses, the image the lock pins each to, what requires it, and whether it is on the Docker daemon. |
 | `lask envs commands [--verbose] [fn]` | The programs the module's commands run in each environment, and which tasks run them; `--verbose` lists each command, where it is written. Commands whose environment a caller passes are under `(dynamic)`. |
 | `lask envs files [--verbose] [fn]` | The host files each environment's commands may read or write: every mount, with `rw`, `ro` or `none`; `--verbose` adds the files the filesystem functions name. `!` marks what reaches past the project directory. |
-| `lask envs network [fn]` | The network each environment's commands are on, the ports they publish, and how names resolve. |
+| `lask envs network [fn]` | The network each environment's commands are on, what `egress` lets them reach, the ports they publish, and how names resolve. |
 | `lask envs access [fn]` | Both in one line per environment, with `CHECK`: what the `within` constraints covering it find (`ok`, `exceeded`, `unproven`). |
+| `lask envs secrets [fn]` | Each `!!` secret, how it reaches a container (`env NAME`, `option name`, `command` or `file`), the container's network, and `CHECK`. `!` marks a secret on a command line, and a network that reaches anywhere. |
 | `lask secrets list \| check [fn]` | List the secret references in the environment; check that their stores can be reached and read. |
 | `lask check` | Static validation only. Nothing is evaluated, no image is pulled. |
 | `lask fmt [--check] [path...]` | Format the project's `.lask` files in place, listing the files it changed; `--check` changes nothing and fails if a file is not formatted (CI); `--stdin` formats standard input. |
@@ -251,7 +252,7 @@ runnable(e, memory = "8g")      // the same for an Environment value e
 
 The head is the only place an image is named — no string or variable can name one — so every image a program uses is found by reading its source, and `lask sync` pins each. A registry reference may leave out its tag — a bare name means `latest` — since the lock pins the digest it resolved to, and runs use that. A recipe path starts with `.` and is relative to the module's directory, inside its own tree.
 
-**Image options** in parentheses decide which image is used: `platform`, and `context` and `build_args` on a recipe. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `dns`, `dns_search`, `add_hosts`, `publish`; `base_mount`, `base_access`, `volumes`. Environment variable names are not `lower_id`, so quote them: `env: {"CI": "1"}`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
+**Image options** in parentheses decide which image is used: `platform`, and `context`, `build_args` and `build_network` on a recipe. `build_network = "none"` builds the recipe with no network, as an image of its own. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `egress`, `dns`, `dns_search`, `add_hosts`, `publish`; `base_mount`, `base_access`, `volumes`. Environment variable names are not `lower_id`, so quote them: `env: {"CI": "1"}`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
 
 `#head{...}` is sugar for `runnable(#head, ...)`, which turns an `Environment` into a `Runnable`. An `Environment` is a `Runnable` with no options, so `$[...]`, `run` and `command ... on` take either. `runnable` takes an `Environment` only: options are given once. A function can take the image as `--image: Environment = #python:3.12` and return `runnable(image, env = {...})`, so a caller picks the version with `python(image = #python:3.13)`. → [6.7](/reference/spec#67-environment-expressions), [15.5](/reference/spec#155-command-execution-functions)
 
@@ -267,7 +268,7 @@ with_container(#alpine:3.20{workdir: "/work/api", env: {"CI": "1"}}, \(box) -> d
 
 `box` is a `Runnable`, so `$[box]`, `run(box, ...)` and the filesystem functions take it. Each command is still a shell of its own, so a `cd` or an `export` ends with it: give `workdir` and `env` as run options. Using `box` after the body has returned is `E-RUNTIME-SESSION-CLOSED`, and so is a command still running in it then. Given `#local`, the body gets `#local` itself. → [15.5](/reference/spec#155-command-execution-functions)
 
-**What a container reaches.** The project directory is mounted read-write at `/work` unless `base_access` narrows it or `base_mount` moves it; the network is Docker's default, which reaches anywhere, unless `network: "none"`. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
+**What a container reaches.** The project directory is mounted read-write at `/work` unless `base_access` narrows it or `base_mount` moves it. The network is Docker's default, which reaches anywhere, unless `network: "none"` removes it or `egress` limits it to the `<host>:<port>` entries it lists. With `egress`, the container goes through a proxy Lask starts beside it, reached at `lask-egress-proxy:3128`. `[]` reaches nothing, and `null` leaves the network as it is. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options), [10.12](/reference/spec#1012-egress)
 
 ```lask
 #node:24{base_access: { ".": "ro", "dist": "rw", ".env": "none" }} // read-only, dist writable, .env hidden
@@ -284,7 +285,7 @@ within { volumes: false }                      // the module: every declaration 
 build() within { files: { ".": "ro", "dist": "rw" }, network: "none" } = $[node] npm run build
 ```
 
-The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"` or `"default"`) and `publish` (`false`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
+The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"`, `"default"`, or the `egress` entries allowed, as `["registry.npmjs.org:443"]`), `publish` (`false`) and `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint, and so does a volume that gives what the host has: `/`, `/proc`, `/sys`, `/dev`, `/etc`, `/root`, `/boot`, the engine's socket or state, or a directory holding one, such as `/var/run`. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
 
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 
@@ -399,11 +400,14 @@ A strategy is the array of delays, so its length bounds the attempts: `backoff_f
 
 ```lask
 deploy(--key!!: String = get_env("AWS_SECRET_ACCESS_KEY")) = do {
-  $[#amazon/aws-cli:2.31.9] aws configure set aws_secret_access_key #{key}
+  aws = #amazon/aws-cli:2.31.9{env: {"AWS_SECRET_ACCESS_KEY": key}}
+  $[aws] aws sts get-caller-identity
 }
 ```
 
 `!!` marks a binding secret: the value is masked in the command execution log wherever it later appears. It is allowed on `String` and `String | Null` — a `null` registers nothing, so a secret can default to `null` like any optional parameter — carries no meaning in the type system, and never masks a `CommandResult` or `eval`'s own output. → [12.8](/reference/spec#128-protection-of-sensitive-information-and-retention-policy)
+
+A secret is given to a container in `env`. Written into a command string, as `#{key}`, it is given to the programs the command runs as an argument, which the host's process list shows, and `lask check` warns of it (`W-SECRET-COMMAND-LINE`). The command string itself reaches the shell on its standard input, never on a command line. `lask envs secrets` lists where each secret goes, and `within { secrets: [key] }` makes `lask check` refuse any other: it names the secrets a function's commands may be given, by their `!!` names, and admits them only in `env`. → [10.11](/reference/spec#1011-access-constraints)
 
 A variable whose whole value is a secret reference is resolved when `get_env`, `find_env` or `get_env_or` reads it, and the value is masked like a `!!` one. The program stays the same; only the environment changes. `LASK_SECRETS` lists the stores a run may use. `lask secrets check [fn]` tells you whether they can be reached and read before a task runs. → [9.8](/reference/spec#98-secret-references), [11.10](/reference/spec#1110-secret-references-secrets)
 
@@ -463,9 +467,11 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 - Every `case` needs an `else`, and it must be last.
 - A command with no environment is an error, never the host. `#local` is something you write.
 - A command string swallows the rest of its line, closing brackets included, so a `$` command cannot sit inside a call's parentheses. Bind it to a name on its own line first.
-- A command runs as `/bin/sh -c <string>` in its container, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
+- A command runs in `/bin/sh` in its container, which reads the string on its standard input, with the project directory mounted at `/work` as the working directory. An image without `/bin/sh` cannot run a command.
 - Each command gets a new container: what it leaves outside `/work` is gone by the next one. To keep it, run the commands in one `with_container`.
 - A container can write to the whole project directory by default. `base_access: "ro"` makes it read-only; `within` makes `lask check` refuse a command that could write more than you allow.
+- `!!` masks a secret in the log, not on the machine: written into a command string, it is an argument of the programs the command runs, which every user of the host can read in its process list. Give it in `env` to a program that reads the variable itself; `--password "$PASSWORD"` puts it back on that program's command line.
+- `egress` works through proxy variables. A program that ignores `HTTPS_PROXY` fails to connect rather than going around the proxy. A JVM is given the proxy in `JAVA_TOOL_OPTIONS` by lask-module-tools, and ssh is not given it at all. Name resolution and UDP do not leave the container.
 - `within` is checked without running anything, so the run options it depends on have to be known from the source. One read with `get_env` is `E-TYPE-WITHIN-UNPROVEN`. One that comes from a task's argument is checked when `lask run` is given it, before the task starts.
 - `lask run` writes nothing to stdout: the return value is not printed, and the command log goes to stderr. To see the value, use `lask eval`.
 - A `Bool` parameter is a flag on the command line: a bare `--verbose` is `true`. The word after it is its value only when it is `true` or `false`, so a positional argument that is the text `true` cannot directly follow a flag.

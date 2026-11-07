@@ -85,7 +85,7 @@ Docker isn't running, or the `docker` command can't reach it. Start Docker Deskt
 [#ghcr.io/astral-sh/ruff:0.13.3:1] exit 127
 ```
 
-Lask runs every command with `/bin/sh -c` in the container, and this image has no shell. Minimal ("distroless" or `scratch`-based) images often contain only the tool's binary. Use a variant that has a shell, usually tagged `-alpine`, `-slim` or with a distribution name. For Ruff, `ghcr.io/astral-sh/ruff:0.13.3-alpine` works and `ghcr.io/astral-sh/ruff:0.13.3` doesn't.
+Lask runs every command with `/bin/sh` in the container, and this image has no shell. Minimal ("distroless" or `scratch`-based) images often contain only the tool's binary. Use a variant that has a shell, usually tagged `-alpine`, `-slim` or with a distribution name. For Ruff, `ghcr.io/astral-sh/ruff:0.13.3-alpine` works and `ghcr.io/astral-sh/ruff:0.13.3` doesn't.
 
 ### A platform warning on Apple silicon
 
