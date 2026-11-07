@@ -68,7 +68,7 @@ A `$` with no `[...]` looks at the programs its command line calls (`go` above) 
 In a container, Lask:
 
 - mounts the project directory (the one holding the entry module) at `/work`, read-write, and makes `/work` the working directory (the run options `base_access` and `base_mount` [narrow or move it](#what-a-container-can-reach));
-- runs the command with `/bin/sh -c`, so the image must contain `/bin/sh`;
+- runs the command with `/bin/sh`, so the image must contain `/bin/sh`;
 - starts the container with the image digest the lock file pins, and removes the container when the command ends.
 
 A `#local` command runs on the host, also in the project directory.
@@ -107,7 +107,7 @@ node = #node:24.21.0-alpine3.24{
 }
 ```
 
-`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host.
+`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host. A volume of `/`, of `/proc`, `/sys`, `/dev`, `/etc`, `/root` or `/boot`, of the engine's socket or state, such as `/var/run/docker.sock`, or of a directory holding one of them, such as `/var/run`, gives the container what the host has, and Lask takes it as the host itself, as it does `#local`: no `within` admits it, and `lask envs files` marks it `! (host)`.
 
 **`egress`** lets a container reach only the destinations it lists, as `<host>:<port>`:
 
@@ -150,6 +150,14 @@ build(): String within { files: { ".": "ro", "dist": "rw" }, network: "none" } =
 `lask check` reads the whole project and reports syntax errors, undefined names, wrong argument counts and types, and commands with no environment. It runs nothing, pulls nothing, and does not need Docker. In a project with [dependencies](#dependencies), it needs `lask sync` to have fetched them once; it never fetches them itself.
 
 `lask sync` pulls every image the project uses, builds every image it has a Dockerfile for, fetches any [dependencies](#dependencies), and writes **`lask.lock.json`**. The lock file records the digest of each image and the content hash of each dependency. Commit it: `run` and `eval` use exactly what it pins, and never pull or build anything themselves. A missing image is an error that tells you to run `lask sync`.
+
+A build reaches the network by default, as `docker build` does. A recipe that needs nothing from it can say so, and is built with no network at all:
+
+```lask
+app = #./Dockerfile(build_network = "none")
+```
+
+It is a different image from the same recipe built online, so a lock written for one is not taken for the other, and `lask envs list` shows it as `#./Dockerfile (no network)`. A build cannot be given `egress`: the steps of a build do not run on a network Lask can place them on.
 
 `lask sync --frozen` fails instead of changing the lock file, which is what you want in CI. See [Running in CI](./ci).
 
@@ -212,7 +220,7 @@ $ lask eval publish --dry-run
 
 ### Where a secret goes
 
-Masking hides a secret in the log, not from the machine. A secret written into a command string, as `$[alpine] echo #{token}`, is part of the command line Lask starts `docker` with, which every user of the host can read in its process list. Lask follows each `!!` value, through every function it is passed to, to the containers it reaches, without running anything, so it can tell you where that happens.
+Masking hides a secret in the log, not from the machine. Lask hands a command string to the container's shell on its standard input, so the string itself is on no command line. The programs the command runs are another matter: in `$[alpine] echo #{token}`, `echo` is given the token as an argument, and on Linux a container's processes are processes of the host, whose process list every user of the host can read. Lask follows each `!!` value, through every function it is passed to, to the containers it reaches, without running anything, so it can tell you where that happens.
 
 `lask check` warns of a secret in a command string, or in a run option other than a value of `env`:
 
@@ -222,7 +230,7 @@ leak(--token!!: String = get_env_or("API_TOKEN", "")): String = $[#alpine:3.22.2
 ```
 
 ```text
-main.lask:18:65-18:96: W-SECRET-COMMAND-LINE [static]: the secret 'main.lask: leak --token' is in the command string, which is given to the engine client and the shell on a command line of the host; give it in 'env' and read the variable in the command
+main.lask:18:65-18:96: W-SECRET-COMMAND-LINE [static]: the secret 'main.lask: leak --token' is in the command string, from which the programs the command runs are given it as arguments, which the host's process list shows; give it in 'env' to a program that reads the variable itself
 ```
 
 `lask envs secrets` lists every secret, how it reaches a container, and that container's network. `!` marks a secret on a command line, and a container that may send it anywhere:

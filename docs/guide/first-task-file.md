@@ -71,7 +71,7 @@ $ lask run test
 The test found `app/` because of how Lask starts a container:
 
 - Your project directory, the one that holds `main.lask`, is mounted at `/work` in the container, and `/work` is the working directory. Relative paths such as `app` mean the same thing in the container as in your project.
-- The command is run by `/bin/sh -c`, so pipes, `&&` and quotes work as they do in a shell script.
+- The command is run by `/bin/sh`, so pipes, `&&` and quotes work as they do in a shell script.
 - The mount is read-write. Files a command creates under `/work` appear in your project: after this run there is an `app/__pycache__` directory.
 
 [Core concepts](./concepts#how-a-command-runs) sums these up.
@@ -106,7 +106,7 @@ $ lask run lint
 ```
 
 ::: warning The image needs a shell
-The tag ends in `-alpine` for a reason. Because Lask runs every command with `/bin/sh -c`, the image must contain `/bin/sh`. Ruff's plain `ghcr.io/astral-sh/ruff:0.13.3` image holds only the `ruff` binary, and a command in it fails with exit code 127 and `exec: "/bin/sh": stat /bin/sh: no such file or directory`. Many tools publish an Alpine or Debian variant for this reason; see [Troubleshooting](./troubleshooting#no-such-file-bin-sh).
+The tag ends in `-alpine` for a reason. Because Lask runs every command with `/bin/sh`, the image must contain `/bin/sh`. Ruff's plain `ghcr.io/astral-sh/ruff:0.13.3` image holds only the `ruff` binary, and a command in it fails with exit code 127 and `exec: "/bin/sh": stat /bin/sh: no such file or directory`. Many tools publish an Alpine or Debian variant for this reason; see [Troubleshooting](./troubleshooting#no-such-file-bin-sh).
 :::
 
 ## Step 3: run both at once
