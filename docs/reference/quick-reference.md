@@ -234,9 +234,13 @@ $2 go build          // String: stderr, same failure rule
 $* go build          // CommandResult {code, stdout, stderr} — never fails on exit code
 $[#alpine:3.20] uname -a        // explicit environment
 $[env] sh -lc 'echo hi'         // any expression of type Environment
+${git rev-parse HEAD} |> trim   // braced: ends at its closing brace
+$*[#local]{ ls dist }           // braced, with a stream and an environment
 ```
 
-A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#!{e}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #!{flags}`. Never put an argument or a file's contents in it. It exists only in a command; in a string, `"#!{x}"` is just text, and `\#!{` writes a literal one in a command.
+A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. Writing `$ cmd |> trim` on one line is `E-TYPE-COMMAND-SYNTAX`, since the shell would read it as `| >`.
+
+A **braced** command, `${ ... }` (whitespace before the `{` is allowed), ends at its closing brace, so it can sit anywhere an expression can: `[${uname -s}, ${uname -m}]`, `c ? ${echo a} : ${echo b}`, `\() -> ${make test}`. Braces inside are counted whatever the quoting, so JSON, `awk '{...}'` and `${HOME}` need nothing; `\{` and `\}` go through as written without being counted, and a lone brace inside quotes is written `#{"}"}`. It may span lines where the shell continues the command — after `|`, `&&`, `||` — but a newline between two commands is an error, because only the last one's exit code would be checked: join them with `&&`. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#!{e}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #!{flags}`. Never put an argument or a file's contents in it. It exists only in a command; in a string, `"#!{x}"` is just text, and `\#!{` writes a literal one in a command.
 
 ```lask
 #local                          // the host
@@ -387,7 +391,7 @@ c(): String = timeout(60, \() -> build())                                  // fa
 d(): CommandResult = until(backoff_fixed(2, 30), \(r: CommandResult) -> r.stdout == "200", \() -> probe())
 ```
 
-A strategy is the array of delays, so its length bounds the attempts: `backoff_fixed(2, 3)` is `[2, 2, 2]`, `backoff_linear(1, 2, 3)` is `[1, 3, 5]`, `backoff_jitter(ds)` randomizes each into `[0, d]`, and a cap is `map(ds, \(d) -> min(d, 30))`. `timeout` stops the body's commands and raises at the call, so a `try` inside the body never sees it. `until` gives up with code 124 too. A command runs to the end of its line, so wrap one in a function before passing it.
+A strategy is the array of delays, so its length bounds the attempts: `backoff_fixed(2, 3)` is `[2, 2, 2]`, `backoff_linear(1, 2, 3)` is `[1, 3, 5]`, `backoff_jitter(ds)` randomizes each into `[0, d]`, and a cap is `map(ds, \(d) -> min(d, 30))`. `timeout` stops the body's commands and raises at the call, so a `try` inside the body never sees it. `until` gives up with code 124 too. A command passed straight to one of these is written braced, as in `\() -> ${make build}`, so that it ends before the call's `)`.
 
 ## Input, output, secrets
 
