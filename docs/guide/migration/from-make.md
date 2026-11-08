@@ -263,11 +263,13 @@ ci(): String = do {
 
 ### Each line is still its own process
 
-As in Make, each `$` line is a separate process, so `cd` does not carry over to the next line: write `$ cd web && npm ci`. Unlike Make, a command string runs to the end of its line, so a pipe into a Lask function goes on the next line:
+As in Make, each `$` line is a separate process, so `cd` does not carry over to the next line: write `$ cd web && npm ci`. Unlike Make, a command string runs to the end of its line, so a pipe into a Lask function goes on the next line, or the command is braced, which ends it at its closing brace:
 
 ```lask
 version = $ git describe --tags --always
   |> trim
+
+version_braced = ${git describe --tags --always} |> trim
 ```
 
 ### Containers do not see the host's environment

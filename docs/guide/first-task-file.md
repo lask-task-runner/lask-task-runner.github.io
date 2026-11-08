@@ -335,10 +335,16 @@ lint(): String = do {
 $ lask check
 main.lask:6:7: E-SYNTAX-UNEXPECTED-TOKEN [syntax]: unexpected =
 expecting !=, &&, (, *, +, -, ., /, ;, <, <<, <=, <|, ==, >, >=, >>, [, newline, |>, ||, or }
-  note: the command on line 6 runs to the end of its line, so its closing ')' was read as part of the command; a command cannot sit inside brackets: bind it to a name on its own line first
+  note: the command on line 6 runs to the end of its line, so its closing ')' was read as part of the command; to end it before the bracket, close it with braces: ${ ... }
 ```
 
-The shell command became `ruff check app)`, and the call to `passed` was never closed. The parser notices only later, at the `=`, but the note names the command. Bind the command's result to a name on its own line first, as Step 5 does with `r = $* ...`.
+The shell command became `ruff check app)`, and the call to `passed` was never closed. The parser notices only later, at the `=`, but the note names the command. Brace the command, so that it ends at its closing brace and the `)` is the call's again:
+
+```lask
+  out = passed($*{ruff check app})
+```
+
+Binding the command's result to a name on its own line first, as Step 5 does with `r = $* ...`, works too.
 
 ## What you have
 
