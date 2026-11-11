@@ -12,9 +12,9 @@ This page takes you from installing Lask to running a first task in a container,
   brew install lask
   ```
 
-  Linux, Windows (through WSL 2) and building from source are on the [Installation](./installation) page, with shell completion and the VS Code extension.
+  Linux and building from source are on the [Installation](./installation) page, with shell completion and the VS Code extension.
 
-- **Docker**, with the daemon running and the `docker` command on your `PATH`: Docker Desktop on macOS, Docker Desktop with WSL integration on Windows, Docker Engine on Linux, or another runtime that provides the `docker` command, such as Colima, OrbStack or Rancher Desktop. If `docker info` works, Lask can use it.
+- **Docker**, with the daemon running and the `docker` command on your `PATH`: Docker Desktop on macOS, Docker Engine on Linux, or another runtime that provides the `docker` command, such as Colima, OrbStack or Rancher Desktop. If `docker info` works, Lask can use it.
 
 Check the install with `lask version`:
 
