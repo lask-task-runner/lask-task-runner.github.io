@@ -464,7 +464,7 @@ A `confirm` entry in `lask.json` makes `lask run deploy --env prod` ask on a ter
 
 ### Runners without Docker
 
-Containers need a Linux runner. Hosted macOS runners on Apple silicon have no nested virtualization for a Docker VM, and hosted Windows runners run only Windows containers. On those, only tasks on `#local` can run — which is often enough for a build or test of platform-specific code.
+Containers need a Linux runner. Hosted macOS runners on Apple silicon have no nested virtualization for a Docker VM, so only tasks on `#local` can run there — which is often enough for a build or test of platform-specific code. Hosted Windows runners run only Windows containers, and Lask does not run on Windows, so a Windows build is better done from a Linux runner, cross-compiling in a container.
 
 ### Shallow checkouts
 

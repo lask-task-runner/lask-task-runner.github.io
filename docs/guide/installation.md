@@ -38,19 +38,6 @@ amd64 only; on another architecture, take the tarball above. Uninstall with `sud
 
 :::
 
-::: details Windows · PowerShell
-
-```powershell
-> $version = (Invoke-RestMethod https://api.github.com/repos/lask-task-runner/lask/releases/latest).tag_name
-> Invoke-WebRequest -Uri "https://github.com/lask-task-runner/lask/releases/download/$version/lask-$version-windows-amd64.zip" -OutFile lask.zip
-> Expand-Archive -Path lask.zip -DestinationPath "$env:LOCALAPPDATA\Programs\lask" -Force
-> setx PATH "$env:PATH;$env:LOCALAPPDATA\Programs\lask"
-```
-
-Restart your terminal for the updated `PATH` to take effect. Uninstall with `Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Programs\lask"`.
-
-:::
-
 ::: details From source · Haskell toolchain
 
 Needs [GHCup](https://www.haskell.org/ghcup/) or `brew install haskell-stack`.
@@ -61,7 +48,7 @@ $ stack --local-bin-path /usr/local/bin/ install
 
 :::
 
-Verify with `lask version`. Lask runs containers through the `docker` command, so Docker must be installed and its daemon running (Docker Desktop on macOS and Windows, Docker Engine on Linux). Archives and packages for every platform are on the [latest release](https://github.com/lask-task-runner/lask/releases/latest); an APT repository and Chocolatey support are planned.
+Verify with `lask version`. Lask runs containers through the `docker` command, so Docker must be installed and its daemon running (Docker Desktop on macOS, Docker Engine on Linux). Archives and packages for every platform are on the [latest release](https://github.com/lask-task-runner/lask/releases/latest); an APT repository is planned.
 
 ::: details Shell completion · bash, zsh, fish
 
