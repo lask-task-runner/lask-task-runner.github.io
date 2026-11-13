@@ -17,24 +17,24 @@ hero:
       link: https://github.com/lask-task-runner/lask
 
 features:
+  - title: One small file
+    details: A project is a <code>main.lask</code> in a small language with familiar syntax. Lask and a container engine are all it needs.
+    link: /guide/getting-started
   - title: Checked before it runs
-    details: <code>lask check</code> resolves every name, argument and type, and the environment of every command, without running anything. Your editor shows the same errors as you type.
+    details: <code>lask check</code> verifies the whole file, from names and types to where each command runs, before anything runs. Your editor shows the same errors as you type.
     link: /guide/concepts#check-sync-and-the-lock-file
-  - title: Pinned images
-    details: Declare once that <code>go</code> comes from <code>#golang:1.25</code>. <code>lask sync</code> records the image's digest, and every machine runs that image.
+  - title: The same everywhere
+    details: Every command runs in the environment the file names, a container image pinned by digest unless it says otherwise, on a laptop and in CI alike.
     link: /language/environments
-  - title: No implicit host
-    details: A command whose program has no declared environment is a check error. Commands run on the host only where you write <code>#local</code>.
-    link: /guide/concepts#environments
   - title: Tasks are functions
-    details: Tasks have typed parameters, defaults and return values. <code>if</code>, <code>case</code>, <code>try</code>/<code>catch</code> and <code>async</code> are part of the language, so there is no shell glue to get wrong.
+    details: Tasks take typed arguments, call each other, and handle errors and concurrency in the language. Each one is also a command with its own <code>--help</code>.
     link: /language/functions
-  - title: A command line for every task
-    details: <code>deploy(dry_run = true)</code> in Lask is the same call as <code>lask run deploy --dry-run</code> from the shell, and the comment above the task is its <code>--help</code>.
-    link: /language/docs-and-cli
-  - title: Reuse across projects
-    details: Import tasks, and the images they run in, from other repositories. The lock file pins each one by content hash.
+  - title: Reusable
+    details: Import tasks, and the environments they run in, from other projects. The lock file pins each one.
     link: /language/dependencies
+  - title: Safe by default
+    details: Nothing runs on the host unless the file says so, secrets stay out of the log, and what a task may reach can be declared and checked.
+    link: /guide/concepts#what-a-container-can-reach
 ---
 
 
