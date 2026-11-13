@@ -137,13 +137,13 @@ $[tools.node.env(egress = tools.node.registry_egress)] npm ci
 ```lask
 within { volumes: false }
 
-build(): String within { files: { ".": "ro", "dist": "rw" }, network: "none" } = do {
+build(): String within { files: { ".": "ro", "dist": "rw" }, outbound: false } = do {
   $[node] npm run build
   read_file("dist/manifest.json", node)
 }
 ```
 
-`within { network: [...] }` takes `egress` entries, and admits a container whose `egress` they all cover: `["*.github.com:443"]` admits `egress: ["api.github.com:443"]`, and no container on the default network. The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
+The fields are `files`, `volumes`, `outbound` (what the network may reach), `inbound` (where a port may be published), `secrets` and `runs`; a field left out is not bounded, `false` admits nothing, and an array admits what it lists. `within { outbound: [...] }` takes `egress` entries, and admits a container whose `egress` they all cover: `["*.github.com:443"]` admits `egress: ["api.github.com:443"]`, and no container on the default network. The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
 
 ## check, sync and the lock file
 

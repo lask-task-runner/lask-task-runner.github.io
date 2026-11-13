@@ -70,7 +70,7 @@ $ lask run release --help
 | `lask completion <shell>` | Emit a completion script (bash, zsh, fish). |
 | `lask version` | Print the version. |
 
-Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask`), `--format text\|json`, `--stdout-encode text\|json\|pretty-json` (default `json`), `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
+Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask`), `--output text\|json\|pretty-json` for what goes to stdout (default `json` for the result of `eval`, `text` otherwise), `--log-format text\|json` for what goes to stderr, `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
 
 A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run`, and `show_version` as `lask run show-version`. A `Bool` keyword parameter is a flag: on its own it is `true`, and it takes the next word as its value only when that is `true` or `false`.
 
@@ -138,24 +138,25 @@ largest<T: orderable>(xs: Array<T>): T = last(sort(xs))   // a named bound
 label<T: Number | String>(x: T): String = "#{x}"          // a type bound
 ```
 
-Annotations are optional and inference fills the rest: a parameter with neither an annotation nor a default is `Any`, and a mixed array literal is `Array<Any>`. Neither a union nor an optional field is **ever** inferred — each is only ever something someone wrote.
+Annotations are optional and inference fills the rest: a parameter with neither an annotation nor a default takes the type its uses in the body give it (`inc(x) = x + 1` takes a `Number`), and one used at no type is a type parameter (`identity(x) = x` is `identity<T>(x: T): T`). A mixed array literal is `Array<Any>`. A union is inferred only as the join of a type with `Null` (`c ? "x" : null` is `String | Null`), and an optional field never: each other one is something someone wrote.
 
 `?` qualifies the key and the field's type qualifies the value: `a: String | Null` must be present and may be null, `a?: String` may be absent. A type parameter is opaque inside its own declaration — it conforms only to itself and `Any` — so a body may pass such a value around but not compare, order or interpolate one, unless a bound says so. `comparable` gives `==`, `stringifiable` gives `#{...}`, and `orderable` gives `sort` and both of the others. A type bound `<T: B>` admits what conforms to `B` and gives what `B` has, though `Any` gives nothing. Built-ins are bounded the same way (`sort<T: orderable>`), and a use outside a bound is `E-TYPE-BOUND`. → [4.2](/reference/spec#42-type-syntax)
 
-Conformance is small on purpose. Everything conforms to `Any`; a member conforms to its union; nothing else does. There is no variance: `Array<Number>` does not conform to `Array<Any>`, and `Record` conforms only when the required set, the optional set and every field type are identical. Getting *out* of `Any` or a union takes a runtime check — `cast(v)` (fails on anything else) or `case` type dispatch (tests instead of failing). → [4.4](/reference/spec#44-type-semantics)
+Conformance is small on purpose. Everything conforms to `Any`, and a member to its union. Containers and records follow their contents: `Array<String>` conforms to `Array<String | Null>`, and a `Record` to one with the same required and optional fields whose types it conforms to. A function conforms to one whose parameters conform to its own and whose result its result conforms to. Getting *out* of `Any` or a union takes a runtime check — `cast(v)` (fails on anything else) or `case` type dispatch (tests instead of failing). → [4.4](/reference/spec#44-type-semantics)
 
 ## Expressions and operators
 
 → [spec 6.2](/reference/spec#62-operators)
 
-`!` › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` `||` › `|>` `<|` `>>` `<<` › `c ? a : b` — all left-associative except the conditional, which is right-associative.
+`!` `-` (unary) › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` › `||` › `|>` `<|` `>>` `<<` › `c ? a : b` — all left-associative except the conditional, which is right-associative. `a || b && c` is `a || (b && c)`, as in most languages.
 
 - `c ? a : b` is `if (c) { a } else { b }`: same typing, only the chosen branch runs. `a ? x : b ? y : z` chains; with more conditions prefer `case { ... }`.
 - `x |> f` is `f(x)`; `f <| x` is `f(x)`.
 - `f >> g` is `\(x) -> g(f(x))`; `f << g` is `\(x) -> f(g(x))`.
 - `&&` and `||` short-circuit.
 - Arithmetic is `Number` only. **`+` does not concatenate strings** — use `concat`, or interpolation.
-- Number literals carry no sign and there is no unary minus: write `0 - 1`.
+- `<` `<=` `>` `>=` compare two `Number`s, or two `String`s by code point, as `sort` orders them.
+- A negative number is written with unary minus: `-1`.
 - `==` needs comparable types; `Any`, `Function` and `AsyncHandle` are not.
 
 ```lask
@@ -286,10 +287,10 @@ A table's `"."` is required, and the longest key wins. A path given `rw` or `ro`
 ```lask
 within { volumes: false }                      // the module: every declaration in it
 
-build() within { files: { ".": "ro", "dist": "rw" }, network: "none" } = $[node] npm run build
+build() within { files: { ".": "ro", "dist": "rw" }, outbound: false } = $[node] npm run build
 ```
 
-The fields are `files` (as `base_access` takes them), `volumes` (`false`, or the host paths allowed), `network` (`"none"`, `"default"`, or the `egress` entries allowed, as `["registry.npmjs.org:443"]`), `publish` (`false`) and `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`). A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint, and so does a volume that gives what the host has: `/`, `/proc`, `/sys`, `/dev`, `/etc`, `/root`, `/boot`, the engine's socket or state, or a directory holding one, such as `/var/run`. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
+The fields are `files` (as `base_access` takes them), `volumes` (`false`, `true`, or the host paths and volumes allowed), `outbound` (`false`, `true`, or the `egress` entries allowed, as `["registry.npmjs.org:443"]`), `inbound` (`false`, `true`, or the host addresses a port may be published on, as `["127.0.0.1"]`), `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`) and `runs` (`false`, or `["container"]` to keep commands off the host). A field left out is not bounded. `access Offline = { outbound: false, inbound: false }` names a constraint, written `within Offline`. A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint, and so does a volume that gives what the host has: `/`, `/proc`, `/sys`, `/dev`, `/etc`, `/root`, `/boot`, the engine's socket or state, or a directory holding one, such as `/var/run`. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
 
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 
@@ -465,7 +466,6 @@ Absence is reported two ways, deliberately: a function that returns a *position*
 ## Things that catch people out
 
 - `+` is arithmetic only. Strings join with `concat` or `#{...}`.
-- There is no unary minus. `0 - 1`.
 - There is no `return`. A block's value is its last statement: stop with `if (bad) { fail(...) }`, and choose with `if`/`else`, `? :` or `case`.
 - `if` without `else` is `null` when its condition is false, so its value is `T | Null` — which `#{...}` does not take. Give it an `else` where a value is needed.
 - Every `case` needs an `else`, and it must be last.
