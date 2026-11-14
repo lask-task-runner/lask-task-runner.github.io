@@ -385,7 +385,7 @@ Jobs that exist only to put work in an order — `needs: [lint, test]` followed 
 | `continue-on-error: true` | `$*`, or `try` / `catch` |
 | retry actions | `retry`, `retry_if`, `until` |
 | `timeout-minutes:` on a step | `timeout(seconds, ...)`, with `timeout-minutes:` kept as a backstop |
-| `$GITHUB_OUTPUT` | `lask eval --stdout-encode text <task>` |
+| `$GITHUB_OUTPUT` | `lask eval --output text <task>` |
 | `environment:` approval | stays; add a `confirm` entry in `lask.json` for local runs |
 
 ## Differences worth knowing
@@ -449,10 +449,10 @@ A version missing from `go_images` fails instead of running, and each listed one
 
 ```yaml
       - id: image
-        run: echo "ref=$(lask eval --stdout-encode text image)" >> "$GITHUB_OUTPUT"
+        run: echo "ref=$(lask eval --output text image)" >> "$GITHUB_OUTPUT"
 ```
 
-`--stdout-encode text` writes a `String` result without JSON quotes.
+`--output text` writes a `String` result without JSON quotes.
 
 ### Exit codes
 

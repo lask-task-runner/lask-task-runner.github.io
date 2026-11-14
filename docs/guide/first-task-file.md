@@ -66,7 +66,7 @@ $ lask run test
 [#python:3.13.7-alpine3.22:1] exit 0
 ```
 
-(Lask starts each log line with a timestamp; this page leaves them out. There is no option to turn them off, but `--format json` gives one JSON object per line if you want to process the log.)
+(Lask starts each log line with a timestamp; this page leaves them out. There is no option to turn them off, but `--log-format json` gives one JSON object per line if you want to process the log.)
 
 The test found `app/` because of how Lask starts a container:
 
@@ -305,9 +305,7 @@ lint(--fix = false): String = do {
 
 ```text
 $ lask check
-main.lask:5:22-5:30: E-TYPE-MISMATCH [static]: type mismatch
-  expected: String
-  actual:   String | Null
+main.lask:5:19-5:27: E-TYPE-BOUND [static]: cannot interpolate a value of type String | Null: it is not stringifiable
 ```
 
 `fix_flag` is `String | Null`, and `null` cannot go into a command. Say what it is when the condition is false:

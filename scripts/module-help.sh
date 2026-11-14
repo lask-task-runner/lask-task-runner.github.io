@@ -31,13 +31,21 @@ out=$(cd "$out" && pwd)
 # (lib/python.lask), as they are in the repository. The JSON listing is
 # the last line; the option help comes first.
 cd "$tmp"
-lask run --format json --help </dev/null | tail -n 1 > "$out/functions.json"
-lask cmd --format json --help </dev/null | tail -n 1 > "$out/commands.json"
+
+# lask 0.17 names the option --output; earlier releases call it --format.
+if lask run --output json --help </dev/null >/dev/null 2>&1; then
+  json="--output json"
+else
+  json="--format json"
+fi
+
+lask run $json --help </dev/null | tail -n 1 > "$out/functions.json"
+lask cmd $json --help </dev/null | tail -n 1 > "$out/commands.json"
 
 # One help document per function in the listing, a function of a
 # namespace the module re-exports under its qualified name (python.env).
 grep -o '"name":"[a-z_][a-z0-9_.]*"' "$out/functions.json" | cut -d'"' -f4 | while read -r fn; do
-  lask run --format json "$fn" --help </dev/null | tail -n 1 > "$out/functions/$fn.json"
+  lask run $json "$fn" --help </dev/null | tail -n 1 > "$out/functions/$fn.json"
 done
 
 printf '%s\n' "$ref" > "$out/ref"

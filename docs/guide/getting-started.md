@@ -144,7 +144,7 @@ A task's signature is its command line. `cowsay_hello(name: String)` is `lask ru
 
 ```text
 $ lask run --help
-Usage: lask run [--module PATH] [--format text|json] [--trace-id ID]
+Usage: lask run [--module PATH] [--output text|json|pretty-json]
 ...
 Functions in main.lask:
   hello         A task that runs no command is an ordinary function.

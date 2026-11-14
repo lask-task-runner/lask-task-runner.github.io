@@ -235,7 +235,7 @@ E-MODULE-LOCK-STALE: the images in the lock file are out of date (--frozen)
 W-ASYNC-UNAWAITED: the async at main.lask:31:7 was never awaited; it was waited for at the end of the run and completed
 ```
 
-A task started with `async` was never awaited, usually because an earlier `await` failed and the task stopped there. Lask waits for it before exiting and reports it, with its error if it failed. The warning doesn't change the exit code.
+A task started with `async` was never awaited, usually because an earlier `await` failed and the task stopped there. Lask waits for it before exiting and reports it. If it completed, that is all. If it failed, the run fails with its error and exit code, even when the task itself succeeded, so a failure nobody awaited is never lost. To start something whose failure does not matter, catch it where it starts: `async try { ... } catch (e) { null }`.
 
 It is expected when you `await` handles in turn, as [Your first real task file](./first-task-file#step-5-a-readable-failure) describes. `all([a, b])` stops at the first failure without this warning: it stops the other steps, and the log shows them as `killed`.
 
