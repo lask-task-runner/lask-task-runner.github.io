@@ -20,7 +20,7 @@ Check the install with `lask version`:
 
 ```text
 $ lask version
-lask 0.16.0
+lask 0.17.0
 ```
 
 ## A first project
