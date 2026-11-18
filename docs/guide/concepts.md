@@ -188,7 +188,7 @@ To hand a secret to a container, put it in the container's environment rather th
 // The token reaches the container as an environment variable, so it is
 // never part of the command string.
 internal with_token(token: String): Runnable =
-  runnable(#alpine:3.22.2, env = {"API_TOKEN": token})
+  runnable(#alpine:3.22.2, env = { "API_TOKEN": token })
 
 // Publish, or only say what would happen.
 //

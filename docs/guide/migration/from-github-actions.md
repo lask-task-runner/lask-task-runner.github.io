@@ -152,7 +152,7 @@ go_images: Map<Environment> = {
 }
 
 go_on(version: String): Runnable =
-  runnable(go_images[version], env = {"CGO_ENABLED": "0"}, volumes = [go_cache])
+  runnable(go_images[version], env = { "CGO_ENABLED": "0" }, volumes = [go_cache])
 
 go = go_on("1.25")
 
@@ -174,16 +174,16 @@ test_all(): Array<String> = all(map(keys(go_images), \(v) -> async test(go = v))
 // Postgres for the integration tests, published on the host, and the
 // way back to it from another container.
 db = #postgres:17-alpine{ env: { "POSTGRES_PASSWORD": "test" }, publish: ["55432:5432"] }
-db_host: Map<String | Null> = {"host.docker.internal": "host-gateway"}
+db_host: Map<String | Null> = { "host.docker.internal": "host-gateway" }
 db_url = "postgres://postgres:test@host.docker.internal:55432/postgres?sslmode=disable"
 
 internal serve_db(): String = $[db] docker-entrypoint.sh postgres
 
 internal db_ready(): CommandResult =
-  $*[#postgres:17-alpine{add_hosts: db_host}] pg_isready -h host.docker.internal -p 55432
+  $*[#postgres:17-alpine{ add_hosts: db_host }] pg_isready -h host.docker.internal -p 55432
 
 internal go_integration(): String =
-  $[#golang:1.25-alpine{env: {"DATABASE_URL": db_url}, add_hosts: db_host, volumes: [go_cache]}] go test -tags integration ./...
+  $[#golang:1.25-alpine{ env: { "DATABASE_URL": db_url }, add_hosts: db_host, volumes: [go_cache] }] go test -tags integration ./...
 
 // Run the integration tests against a fresh Postgres.
 //
@@ -411,7 +411,7 @@ aws = #amazon/aws-cli:2.31.9
 
 // Upload the binary.
 upload(--bucket = "example-artifacts", --key!!: String = get_env("AWS_SECRET_ACCESS_KEY")) =
-  $[runnable(aws, env = {"AWS_ACCESS_KEY_ID": get_env("AWS_ACCESS_KEY_ID"), "AWS_SECRET_ACCESS_KEY": key, "AWS_SESSION_TOKEN": find_env("AWS_SESSION_TOKEN")})] aws s3 cp bin/hello s3://#{bucket}/hello
+  $[runnable(aws, env = { "AWS_ACCESS_KEY_ID": get_env("AWS_ACCESS_KEY_ID"), "AWS_SECRET_ACCESS_KEY": key, "AWS_SESSION_TOKEN": find_env("AWS_SESSION_TOKEN") })] aws s3 cp bin/hello s3://#{bucket}/hello
 ```
 
 A value passed in `env:` never appears on a command line. `find_env` returns `null` when the variable is not set, and a `null` variable is left out, so the same task works with long-lived keys and with OIDC's session tokens. To keep secrets out of CI configuration entirely, see the secret references in the [Quick Reference](/reference/quick-reference#input-output-secrets).
