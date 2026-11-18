@@ -173,7 +173,7 @@ test_all(): Array<String> = all(map(keys(go_images), \(v) -> async test(go = v))
 ```lask
 // Postgres for the integration tests, published on the host, and the
 // way back to it from another container.
-db = #postgres:17-alpine{env: {"POSTGRES_PASSWORD": "test"}, publish: ["55432:5432"]}
+db = #postgres:17-alpine{ env: { "POSTGRES_PASSWORD": "test" }, publish: ["55432:5432"] }
 db_host: Map<String | Null> = {"host.docker.internal": "host-gateway"}
 db_url = "postgres://postgres:test@host.docker.internal:55432/postgres?sslmode=disable"
 

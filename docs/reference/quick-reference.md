@@ -148,11 +148,12 @@ Conformance is small on purpose. Everything conforms to `Any`, and a member to i
 
 → [spec 6.2](/reference/spec#62-operators)
 
-`!` `-` (unary) › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` › `||` › `|>` `<|` `>>` `<<` › `c ? a : b` — all left-associative except the conditional, which is right-associative. `a || b && c` is `a || (b && c)`, as in most languages.
+`!` `-` (unary) › `*` `/` › `+` `-` › `==` `!=` `<` `<=` `>` `>=` › `&&` › `||` › `>>` `<<` › `|>` `<|` › `c ? a : b` — left-associative except `<|`, `<<` and the conditional, which are right-associative, so each pipe and composition reads the way its arrow points. `a || b && c` is `a || (b && c)`, as in most languages, and `xs |> f >> g` is `xs |> (f >> g)`.
 
 - `c ? a : b` is `if (c) { a } else { b }`: same typing, only the chosen branch runs. `a ? x : b ? y : z` chains; with more conditions prefer `case { ... }`.
-- `x |> f` is `f(x)`; `f <| x` is `f(x)`.
+- `x |> f` is `f(x)`; `f <| x` is `f(x)`, and `f <| g <| x` is `f(g(x))`.
 - `f >> g` is `\(x) -> g(f(x))`; `f << g` is `\(x) -> f(g(x))`.
+- `|>` and `<|` don't mix without parentheses, and neither do `>>` and `<<`: `x |> f <| y` is a syntax error.
 - `&&` and `||` short-circuit.
 - Arithmetic is `Number` only. **`+` does not concatenate strings** — use `concat`, or interpolation.
 - `<` `<=` `>` `>=` compare two `Number`s, or two `String`s by code point, as `sort` orders them.
@@ -250,8 +251,8 @@ A **braced** command, `${ ... }` (whitespace before the `{` is allowed), ends at
 #ubuntu@sha256:9cee...          // a digest works too
 #./infra/Dockerfile(context = ".", build_args = {"V": "1"})   // built from a recipe
 #node:20-alpine(platform = "linux/amd64")                     // one platform's variant
-#alpine:3.20{memory: "4g"}      // run options in braces: a Runnable
-#node:20-alpine{env: {"CI": "1"}, network: "none", read_only: true}
+#alpine:3.20{ memory: "4g" }    // run options in braces: a Runnable
+#node:20-alpine{ env: { "CI": "1" }, network: "none", read_only: true }
 runnable(e, memory = "8g")      // the same for an Environment value e
 ```
 
@@ -264,7 +265,7 @@ The head is the only place an image is named — no string or variable can name 
 **One container for several commands.** Each `$[image]` starts a new container, so a file a command writes outside `/work`, a package it installs or a process it leaves running is gone by the next command. `with_container` keeps one container for the length of its body:
 
 ```lask
-with_container(#alpine:3.20{workdir: "/work/api", env: {"CI": "1"}}, \(box) -> do {
+with_container(#alpine:3.20{ workdir: "/work/api", env: { "CI": "1" } }, \(box) -> do {
   $[box] apk add --no-cache curl         // still there for the next line
   $[box] ./server > /tmp/log 2>&1 &      // still running for the next line
   $[box] curl -fs localhost:8080/health
@@ -276,8 +277,8 @@ with_container(#alpine:3.20{workdir: "/work/api", env: {"CI": "1"}}, \(box) -> d
 **What a container reaches.** The project directory is mounted read-write at `/work` unless `base_access` narrows it or `base_mount` moves it. The network is Docker's default, which reaches anywhere, unless `network: "none"` removes it or `egress` limits it to the `<host>:<port>` entries it lists. With `egress`, the container goes through a proxy Lask starts beside it, reached at `lask-egress-proxy:3128`. `[]` reaches nothing, and `null` leaves the network as it is. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options), [10.12](/reference/spec#1012-egress)
 
 ```lask
-#node:24{base_access: { ".": "ro", "dist": "rw", ".env": "none" }} // read-only, dist writable, .env hidden
-#golang:1.25{base_mount: "/src"}                                  // mounted, and started, at /src
+#node:24{ base_access: { ".": "ro", "dist": "rw", ".env": "none" } } // read-only, dist writable, .env hidden
+#golang:1.25{ base_mount: "/src" }                                  // mounted, and started, at /src
 ```
 
 A table's `"."` is required, and the longest key wins. A path given `rw` or `ro` must exist and stay inside the project directory, links followed, or the command does not run.
@@ -405,7 +406,7 @@ A strategy is the array of delays, so its length bounds the attempts: `backoff_f
 
 ```lask
 deploy(--key!!: String = get_env("AWS_SECRET_ACCESS_KEY")) = do {
-  aws = #amazon/aws-cli:2.31.9{env: {"AWS_SECRET_ACCESS_KEY": key}}
+  aws = #amazon/aws-cli:2.31.9{ env: { "AWS_SECRET_ACCESS_KEY": key } }
   $[aws] aws sts get-caller-identity
 }
 ```
