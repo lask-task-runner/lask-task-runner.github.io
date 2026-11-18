@@ -64,7 +64,7 @@ The same thing as `main.lask`:
 // Every Go command runs in this image, with the build cache kept in a
 // named volume between runs.
 go = #golang:1.25-alpine{
-  env: {"CGO_ENABLED": "0"},
+  env: { "CGO_ENABLED": "0" },
   volumes: ["lask-go-cache:/root/.cache"]
 }
 lint = #golangci/golangci-lint:v2.5.0-alpine
@@ -269,7 +269,7 @@ As in Make, each `$` line is a separate process, so `cd` does not carry over to 
 version = $ git describe --tags --always
   |> trim
 
-version_braced = ${git describe --tags --always} |> trim
+version_braced = ${ git describe --tags --always } |> trim
 ```
 
 ### Containers do not see the host's environment

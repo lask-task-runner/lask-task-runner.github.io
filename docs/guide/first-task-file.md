@@ -339,7 +339,7 @@ expecting !=, &&, (, *, +, -, ., /, ;, <, <<, <=, <|, ==, >, >=, >>, [, newline,
 The shell command became `ruff check app)`, and the call to `passed` was never closed. The parser notices only later, at the `=`, but the note names the command. Brace the command, so that it ends at its closing brace and the `)` is the call's again:
 
 ```lask
-  out = passed($*{ruff check app})
+  out = passed($*{ ruff check app })
 ```
 
 Binding the command's result to a name on its own line first, as Step 5 does with `r = $* ...`, works too.
