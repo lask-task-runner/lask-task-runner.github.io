@@ -277,7 +277,7 @@ version_braced = ${git describe --tags --always} |> trim
 A command in an image starts with the image's own variables, not yours. `export GOFLAGS` in a Makefile, or a variable set in your shell, does not reach it. Pass what it needs with the `env` run option:
 
 ```lask
-command { "go" } on #golang:1.25-alpine{env: {"GOFLAGS": get_env_or("GOFLAGS", "")}}
+command { "go" } on #golang:1.25-alpine{ env: { "GOFLAGS": get_env_or("GOFLAGS", "") } }
 ```
 
 For credentials, bind the value with `!!` so it is masked in the log — see [Input, output, secrets](/reference/quick-reference#input-output-secrets).
@@ -291,7 +291,7 @@ For credentials, bind the value with `!!` so it is masked in the log — see [In
 The container is fresh on every run, so a tool's download and build caches are thrown away unless you keep them. Mount a named volume on the cache directory, as the example does for Go:
 
 ```lask
-go = #golang:1.25-alpine{volumes: ["lask-go-cache:/root/.cache"]}
+go = #golang:1.25-alpine{ volumes: ["lask-go-cache:/root/.cache"] }
 ```
 
 ### Scripts are run with an explicit environment

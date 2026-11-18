@@ -32,7 +32,7 @@ An **environment** is where a command runs. Lask has three ways to write one, al
 | `#./Dockerfile` | A container from an image Lask builds from that Dockerfile. |
 | `#local` | The host, outside any container. |
 
-Run options for a container go in braces after the image, such as `#alpine:3.22.2{memory: "256m", network: "none"}`. An environment with options has the type `Runnable`.
+Run options for a container go in braces after the image, such as `#alpine:3.22.2{ memory: "256m", network: "none" }`. An environment with options has the type `Runnable`.
 
 There is **no default environment**. A command that names no environment, and whose program no `command` declaration covers, is an error that `lask check` reports. A command runs on the host only when its environment is `#local`.
 
@@ -76,7 +76,7 @@ A `#local` command runs on the host, also in the project directory.
 Because each command gets a new container, anything a command leaves outside `/work` is gone by the next one. That includes a package it installed and a server it started in the background. To run several commands in one container, use `with_container`:
 
 ```lask
-test_api(): String = with_container(#node:24.21.0-alpine3.24{workdir: "/work/api"}, \(box) -> do {
+test_api(): String = with_container(#node:24.21.0-alpine3.24{ workdir: "/work/api" }, \(box) -> do {
   $[box] apk add --no-cache curl
   $[box] npm start > /tmp/server.log 2>&1 &
   $[box] npm test
@@ -112,7 +112,7 @@ node = #node:24.21.0-alpine3.24{
 **`egress`** lets a container reach only the destinations it lists, as `<host>:<port>`:
 
 ```lask
-curl = #curlimages/curl:8.17.0{egress: ["example.com:443", "*.github.com:443"]}
+curl = #curlimages/curl:8.17.0{ egress: ["example.com:443", "*.github.com:443"] }
 ```
 
 The container runs on a network with no route out, next to a proxy that Lask starts. The proxy forwards only to what the list names. Lask sets `HTTPS_PROXY` and the other proxy variables, which most tools read, so nothing in the task changes. A program that ignores them reaches nothing at all. Each destination the proxy refuses appears in the command log:
