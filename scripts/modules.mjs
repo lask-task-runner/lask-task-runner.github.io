@@ -150,9 +150,18 @@ const paragraphs = (s) =>
     .filter(Boolean)
     .join("\n\n");
 
+// An environment of a function's help as commands.json names it:
+// "python:3.12", or "recipe ./lib/x/Dockerfile". lask 0.17 writes the
+// environment itself ("#python:3.12"), earlier releases the target.
+const targetOf = (e) => {
+  if (e.target !== undefined) return e.target;
+  const head = e.environment.replace(/^#/, "");
+  return head.startsWith(".") ? `recipe ${head}` : head;
+};
+
 // The command words whose environment is this function's default image.
 function commandWordsOf(h) {
-  const targets = new Set((h.environments ?? []).map((e) => e.target));
+  const targets = new Set((h.environments ?? []).map(targetOf));
   return commands.filter((c) => targets.has(c.target)).map((c) => c.name);
 }
 
@@ -176,7 +185,7 @@ function renderFunction(name) {
   }
   if (h.returns) lines.push(`**Returns** ${code(h.returns.type)}${h.returns.doc ? `: ${text(h.returns.doc)}` : ""}`, "");
 
-  const images = (h.environments ?? []).map((e) => code(e.target.replace(/^recipe \.\//, "recipe ")));
+  const images = (h.environments ?? []).map((e) => code(targetOf(e).replace(/^recipe \.\//, "recipe ")));
   if (images.length) lines.push(`**Image** ${images.join(", ")}`, "");
   const words = commandWordsOf(h);
   if (words.length) lines.push(`**Command words** ${words.map(code).join(", ")}: \`import command { ${words.map((w) => `"${w}"`).join(", ")} } from "tools"\``, "");
