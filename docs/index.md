@@ -57,8 +57,11 @@ A `main.lask` that lints and tests a Python project, with neither Python nor the
 command { "python" } on #python:3.13.7-alpine3.22
 command { "ruff" } on #ghcr.io/astral-sh/ruff:0.13.3-alpine
 
+// What a check may reach: no secret, and nothing on the host.
+access Sandboxed = { secrets: false, runs: ["container"] }
+
 // Lint and test at the same time.
-ci() = do {
+ci() within Sandboxed = do {
   lint = async $ ruff check app
   test = async $ python -m unittest discover -s app
   all([lint, test])
@@ -70,13 +73,20 @@ $ lask sync      # pull both images and pin their digests in lask.lock.json
 $ lask run ci    # run both commands, each in its own container
 ```
 
-Misspell `python` as `pyhton` on line 8, and `lask check` reports it before anything runs:
+Misspell `python` as `pyhton` on line 11, and `lask check` reports it before anything runs:
 
 ```text
 $ lask check
-main.lask:8:16-8:52: E-TYPE-COMMAND-NOENV [static]: 'pyhton' is not a declared command; ...
+main.lask:11:16-11:52: E-TYPE-COMMAND-NOENV [static]: 'pyhton' is not a declared command; ...
 ```
 
-[Your first real task file](/guide/first-task-file) builds this file step by step.
+Run `ruff` on the host instead, as `$[#local] ruff check app`, and `within Sandboxed` stops that too:
+
+```text
+$ lask check
+main.lask:10:16-10:40: E-TYPE-WITHIN-EXCEEDED [static]: #local reaches the whole host, which within Sandboxed of 'ci' does not allow (runs)
+```
+
+[Your first real task file](/guide/first-task-file) builds this file step by step, and [Core concepts](/guide/concepts#what-a-container-can-reach) covers `access` and `within`.
 
 </div>

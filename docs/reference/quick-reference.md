@@ -12,7 +12,7 @@ The whole language and CLI on one page, for someone who wants to write a task no
 // main.lask — the default target of every subcommand.
 
 // Environments are values: pin an image once, reuse it everywhere.
-go   = #golang:1.25
+go = #golang:1.25
 node = #node:20.20.2-alpine3.23
 
 // Declare which image provides each program. A command naming no
@@ -156,6 +156,7 @@ Conformance is small on purpose. Everything conforms to `Any`, and a member to i
 - `|>` and `<|` don't mix without parentheses, and neither do `>>` and `<<`: `x |> f <| y` is a syntax error.
 - `&&` and `||` short-circuit.
 - Arithmetic is `Number` only. **`+` does not concatenate strings** — use `concat`, or interpolation.
+- `+`, `-` and `*` are exact; `/` divides as doubles do, so `10 / 3` is `3.3333333333333335`, and dividing by `0` is `E-RUNTIME-DIV-BY-ZERO`. A `Number` stays within the range of a finite double, up to `1.7976931348623157e308` either way: a literal beyond it is a syntax error, a result beyond it `E-RUNTIME-VALUE`, and one read from text (`to_number`, `from_json`) `E-IO-DATA-DECODE`.
 - `<` `<=` `>` `>=` compare two `Number`s, or two `String`s by code point, as `sort` orders them.
 - A negative number is written with unary minus: `-1`.
 - `==` needs comparable types; `Any`, `Function` and `AsyncHandle` are not.
@@ -237,19 +238,19 @@ $2 go build          // String: stderr, same failure rule
 $* go build          // CommandResult {code, stdout, stderr} — never fails on exit code
 $[#alpine:3.20] uname -a        // explicit environment
 $[env] sh -lc 'echo hi'         // any expression of type Environment
-${git rev-parse HEAD} |> trim   // braced: ends at its closing brace
+${ git rev-parse HEAD } |> trim // braced: ends at its closing brace
 $*[#local]{ ls dist }           // braced, with a stream and an environment
 ```
 
 A command string runs **to the end of the line** — nothing of the enclosing expression may follow it on that line. End the line with `\` to continue it, and put `|> trim` on the next line to keep piping. A command in the `?` branch of a conditional likewise needs the `: ...` on the next line. Writing `$ cmd |> trim` on one line is `E-TYPE-COMMAND-SYNTAX`, since the shell would read it as `| >`.
 
-A **braced** command, `${ ... }` (whitespace before the `{` is allowed), ends at its closing brace, so it can sit anywhere an expression can: `[${uname -s}, ${uname -m}]`, `c ? ${echo a} : ${echo b}`, `\() -> ${make test}`. Braces inside are counted whatever the quoting, so JSON, `awk '{...}'` and `${HOME}` need nothing; `\{` and `\}` go through as written without being counted, and a lone brace inside quotes is written `#{"}"}`. It may span lines where the shell continues the command — after `|`, `&&`, `||` — but a newline between two commands is an error, because only the last one's exit code would be checked: join them with `&&`. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#!{e}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #!{flags}`. Never put an argument or a file's contents in it. It exists only in a command; in a string, `"#!{x}"` is just text, and `\#!{` writes a literal one in a command.
+A **braced** command, `${ ... }` (whitespace before the `{` is allowed), ends at its closing brace, so it can sit anywhere an expression can: `[${ uname -s }, ${ uname -m }]`, `c ? ${ echo a } : ${ echo b }`, `\() -> ${ make test }`. Braces inside are counted whatever the quoting, so JSON, `awk '{...}'` and `${HOME}` need nothing; `\{` and `\}` go through as written without being counted, and a lone brace inside quotes is written `#{"}"}`. It may span lines where the shell continues the command — after `|`, `&&`, `||` — but a newline between two commands is an error, because only the last one's exit code would be checked: join them with `&&`. `#{e}` interpolates a stringifiable value (`String | Null` is not one: resolve it first). In a command it is escaped for the quotes it sits in, so it reaches the program as text: one word outside quotes (`$ cp #{src} dist/`), and plain text inside `"..."` or `'...'`. `#!{e}` goes in unescaped, for the shell to parse — say, flags your code chose: `$ go build #!{flags}`. Never put an argument or a file's contents in it. It exists only in a command; in a string, `"#!{x}"` is just text, and `\#!{` writes a literal one in a command.
 
 ```lask
 #local                          // the host
 #alpine:3.20                    // an image in a registry
 #ubuntu@sha256:9cee...          // a digest works too
-#./infra/Dockerfile(context = ".", build_args = {"V": "1"})   // built from a recipe
+#./infra/Dockerfile(context = ".", build_args = { "V": "1" }) // built from a recipe
 #node:20-alpine(platform = "linux/amd64")                     // one platform's variant
 #alpine:3.20{ memory: "4g" }    // run options in braces: a Runnable
 #node:20-alpine{ env: { "CI": "1" }, network: "none", read_only: true }
@@ -258,7 +259,7 @@ runnable(e, memory = "8g")      // the same for an Environment value e
 
 The head is the only place an image is named — no string or variable can name one — so every image a program uses is found by reading its source, and `lask sync` pins each. A registry reference may leave out its tag — a bare name means `latest` — since the lock pins the digest it resolved to, and runs use that. A recipe path starts with `.` and is relative to the module's directory, inside its own tree.
 
-**Image options** in parentheses decide which image is used: `platform`, and `context`, `build_args` and `build_network` on a recipe. `build_network = "none"` builds the recipe with no network, as an image of its own. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `egress`, `dns`, `dns_search`, `add_hosts`, `publish`; `base_mount`, `base_access`, `volumes`. Environment variable names are not `lower_id`, so quote them: `env: {"CI": "1"}`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
+**Image options** in parentheses decide which image is used: `platform`, and `context`, `build_args` and `build_network` on a recipe. `build_network = "none"` builds the recipe with no network, as an image of its own. They are literals. **Run options** in braces decide how it runs, and take any expression: `memory`, `memory_swap`, `memory_reservation`, `cpus`, `cpu_shares`, `cpuset_cpus`, `cpuset_mems`, `pids_limit`, `shm_size`, `blkio_weight`, `ulimits`; `workdir`, `user`, `env`, `hostname`, `init`; `read_only`, `tmpfs`, `cap_drop`; `network`, `egress`, `dns`, `dns_search`, `add_hosts`, `publish`; `base_mount`, `base_access`, `volumes`. Environment variable names are not `lower_id`, so quote them: `env: { "CI": "1" }`. An option given `null` is left out, as are the `null` elements of a list or table — `""` is a value and is passed on. → [10.2](/reference/spec#102-target-environment-profiles-and-their-options)
 
 `#head{...}` is sugar for `runnable(#head, ...)`, which turns an `Environment` into a `Runnable`. An `Environment` is a `Runnable` with no options, so `$[...]`, `run` and `command ... on` take either. `runnable` takes an `Environment` only: options are given once. A function can take the image as `--image: Environment = #python:3.12` and return `runnable(image, env = {...})`, so a caller picks the version with `python(image = #python:3.13)`. → [6.7](/reference/spec#67-environment-expressions), [15.5](/reference/spec#155-command-execution-functions)
 
@@ -283,6 +284,8 @@ with_container(#alpine:3.20{ workdir: "/work/api", env: { "CI": "1" } }, \(box) 
 
 A table's `"."` is required, and the longest key wins. A path given `rw` or `ro` must exist and stay inside the project directory, links followed, or the command does not run.
 
+`volumes` mounts more: a host path (`"/srv/data:/data:ro"`), a path in the project directory (`"./cache:/root/.cache"`, which must stay inside it), or a named volume (`"lask-go-cache:/root/.cache"`).
+
 **Constraining it with `within`.** A function, or a whole module, can state the most its commands may reach, and `lask check` holds it to that before anything runs. → [10.11](/reference/spec#1011-access-constraints)
 
 ```lask
@@ -291,7 +294,7 @@ within { volumes: false }                      // the module: every declaration 
 build() within { files: { ".": "ro", "dist": "rw" }, outbound: false } = $[node] npm run build
 ```
 
-The fields are `files` (as `base_access` takes them), `volumes` (`false`, `true`, or the host paths and volumes allowed), `outbound` (`false`, `true`, or the `egress` entries allowed, as `["registry.npmjs.org:443"]`), `inbound` (`false`, `true`, or the host addresses a port may be published on, as `["127.0.0.1"]`), `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`) and `runs` (`false`, or `["container"]` to keep commands off the host). A field left out is not bounded. `access Offline = { outbound: false, inbound: false }` names a constraint, written `within Offline`. A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint, and so does a volume that gives what the host has: `/`, `/proc`, `/sys`, `/dev`, `/etc`, `/root`, `/boot`, the engine's socket or state, or a directory holding one, such as `/var/run`. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
+The fields are `files` (as `base_access` takes them), `volumes` (`false`, `true`, or the host paths and volumes allowed; only `true` admits a `./` path), `outbound` (`false`, `true`, or the `egress` entries allowed, as `["registry.npmjs.org:443"]`), `inbound` (`false`, `true`, or the host addresses a port may be published on, as `["127.0.0.1"]`), `secrets` (`false`, or the `!!` names a function's commands may be given, as `[token]`, and those only in `env`) and `runs` (`false`, or `["container"]` to keep commands off the host). A field left out is not bounded. `access Offline = { outbound: false, inbound: false }` names a constraint, written `within Offline`. A function's constraint can narrow its module's, never widen it. Every command a covered function can reach is checked, in any module, a library's included; `#local` exceeds any constraint, and so does a volume that gives what the host has: `/`, `/proc`, `/sys`, `/dev`, `/etc`, `/root`, `/boot`, the engine's socket or state, or a directory holding one, such as `/var/run`. An environment passed as an argument is checked at the call that passes it. What exceeds a constraint is `E-TYPE-WITHIN-EXCEEDED`; what cannot be known without running, such as an option read with `get_env`, is `E-TYPE-WITHIN-UNPROVEN`. `lask envs access` shows what each constraint finds.
 
 **Dispatch.** A `$` with no `[env]` gets its environment from the command words in the string, matched against the command words the module declares or imports. → [10.9](/reference/spec#109-command-dispatch)
 

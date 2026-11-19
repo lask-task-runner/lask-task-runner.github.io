@@ -64,7 +64,7 @@ The same thing as `main.lask`:
 // Every Go command runs in this image, with the build cache kept in a
 // named volume between runs.
 go = #golang:1.25-alpine{
-  env: {"CGO_ENABLED": "0"},
+  env: { "CGO_ENABLED": "0" },
   volumes: ["lask-go-cache:/root/.cache"]
 }
 lint = #golangci/golangci-lint:v2.5.0-alpine
@@ -210,7 +210,7 @@ When only file rules remain, keep them and call Make from the task that needs th
 | `-cmd` (ignore failure) | `$* cmd`, or `try` / `catch` |
 | `make -k` | `try` / `catch` around each step |
 | `@cmd` (don't echo) | — every command is logged to stderr; `run` prints nothing to stdout |
-| `export VAR` | `env: {"VAR": ...}` on the environment |
+| `export VAR` | `env: { "VAR": ... }` on the environment |
 | `include other.mk` | `import { task } from "./other.lask"` |
 | A hand-written `help` target | doc comments, shown by `lask run <task> --help` |
 | `.DEFAULT_GOAL` | — name the task: `lask run build` |
@@ -269,7 +269,7 @@ As in Make, each `$` line is a separate process, so `cd` does not carry over to 
 version = $ git describe --tags --always
   |> trim
 
-version_braced = ${git describe --tags --always} |> trim
+version_braced = ${ git describe --tags --always } |> trim
 ```
 
 ### Containers do not see the host's environment

@@ -129,7 +129,7 @@ One command line calls programs declared in different environments. A command ru
 main.lask:6:7: E-SYNTAX-UNEXPECTED-TOKEN [syntax]: unexpected =
 ```
 
-A `$` command takes the rest of its line, closing brackets included. `passed($* ruff check app)` sends `ruff check app)` to the shell and leaves the call unclosed. Put the command on a line of its own, bound to a name (`r = $* ruff check app`), and use the name. For the same reason, a `//` comment after a command is passed to the shell.
+A `$` command takes the rest of its line, closing brackets included. `passed($* ruff check app)` sends `ruff check app)` to the shell and leaves the call unclosed; the note under the error says so. Brace the command, `passed($*{ ruff check app })`, so that it ends at its closing brace, or put it on a line of its own, bound to a name (`r = $* ruff check app`), and use the name. For the same reason, a `//` comment after a command is passed to the shell.
 
 ## The language
 
