@@ -32,6 +32,11 @@ out=$(cd "$out" && pwd)
 # the last line; the option help comes first.
 cd "$tmp"
 
+# A module this lask cannot load gives no listing, and the usage text the
+# pipes below keep would only fail later, as JSON that does not parse.
+# Fail here instead, with lask's own diagnostics.
+lask check </dev/null
+
 # lask 0.17 names the option --output; earlier releases call it --format.
 if lask run --output json --help </dev/null >/dev/null 2>&1; then
   json="--output json"

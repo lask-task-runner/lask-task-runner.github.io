@@ -54,8 +54,8 @@ jobs:
       # reference, from its own help.
       - name: Install Lask
         env:
-          LASK_VERSION: v0.15.0
-          LASK_SHA256: 6ba0a2a1b6645b41f088eebf3a66fa783bde8b28cc5656250d482a111bfd129e
+          LASK_VERSION: v0.17.0
+          LASK_SHA256: 131af067d1d0c0eb72c086dbea8599fd5b82f84d54a4a26a2e0e2dc086f67497
         run: |
           curl -fsSL -o lask.tar.gz \
             "https://github.com/lask-task-runner/lask/releases/download/${LASK_VERSION}/lask-${LASK_VERSION}-linux-amd64.tar.gz"

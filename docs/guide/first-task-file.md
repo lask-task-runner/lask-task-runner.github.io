@@ -332,7 +332,7 @@ lint(): String = do {
 ```text
 $ lask check
 main.lask:6:7: E-SYNTAX-UNEXPECTED-TOKEN [syntax]: unexpected =
-expecting !=, &&, (, *, +, -, ., /, ;, <, <<, <=, <|, ==, >, >=, >>, [, newline, |>, ||, or }
+expecting !=, &&, (, *, +, -, ., /, ;, <, <<, <=, <|, ==, >, >=, >>, ?, [, newline, |>, ||, or }
   note: the command on line 6 runs to the end of its line, so its closing ')' was read as part of the command; to end it before the bracket, close it with braces: ${ ... }
 ```
 

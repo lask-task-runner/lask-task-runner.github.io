@@ -107,7 +107,7 @@ node = #node:24.21.0-alpine3.24{
 }
 ```
 
-`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host. A volume of `/`, of `/proc`, `/sys`, `/dev`, `/etc`, `/root` or `/boot`, of the engine's socket or state, such as `/var/run/docker.sock`, or of a directory holding one of them, such as `/var/run`, gives the container what the host has, and Lask takes it as the host itself, as it does `#local`: no `within` admits it, and `lask envs files` marks it `! (host)`.
+`base_access` takes `"rw"`, `"ro"`, `"none"`, or a table of paths like the one above, where `"."` is the project directory and the longest matching path wins. `base_mount` mounts the directory somewhere other than `/work`. `volumes` and `publish` go the other way: they let a container reach more of the host. A volume whose source begins with `.`, as `"./cache:/root/.cache"`, is a path in the project directory, and must stay inside it. A volume of `/`, of `/proc`, `/sys`, `/dev`, `/etc`, `/root` or `/boot`, of the engine's socket or state, such as `/var/run/docker.sock`, or of a directory holding one of them, such as `/var/run`, gives the container what the host has, and Lask takes it as the host itself, as it does `#local`: no `within` admits it, and `lask envs files` marks it `! (host)`.
 
 **`egress`** lets a container reach only the destinations it lists, as `<host>:<port>`:
 
@@ -144,6 +144,17 @@ build(): String within { files: { ".": "ro", "dist": "rw" }, outbound: false } =
 ```
 
 The fields are `files`, `volumes`, `outbound` (what the network may reach), `inbound` (where a port may be published), `secrets` and `runs`; a field left out is not bounded, `false` admits nothing, and an array admits what it lists. `within { outbound: [...] }` takes `egress` entries, and admits a container whose `egress` they all cover: `["*.github.com:443"]` admits `egress: ["api.github.com:443"]`, and no container on the default network. The check follows every function the task calls, in other modules and dependencies too, and an environment passed as an argument is checked where it is passed. A command on `#local` never fits a constraint, since the host cannot be narrowed. A run option the check cannot know without running, such as one read with `get_env`, is an error too (`E-TYPE-WITHIN-UNPROVEN`): a constraint holds only of what is shown to hold. More: [Access constraints](/reference/spec#1011-access-constraints).
+
+A constraint can be given a name with `access`, and the name written after `within`, so that a task reads by what it may do and several share one definition:
+
+```lask
+// No network either way, and nothing on the host.
+access Offline = { outbound: false, inbound: false, runs: ["container"] }
+
+build(): String within Offline = $[node] npm run build
+```
+
+An `access` declaration is imported and exported like a type alias. Its `secrets`, if any, is `false`: a list of secrets names the `!!` bindings of one function, so it is written in that function's own `within`.
 
 ## check, sync and the lock file
 
@@ -261,7 +272,7 @@ More: [Input, output and secrets](/language/io-and-secrets), which also covers s
 A project can import modules from another repository. `lask deps add` records a dependency in `lask.json` (a Git URL and a tag or commit, or a URL), and `lask sync` fetches it into `.lask/` in the project directory and records its hash in the lock file. `import` then refers to it by name:
 
 ```bash
-lask deps add tools --git https://github.com/lask-task-runner/lask-module-tools.git --rev v0.5.0
+lask deps add tools --git https://github.com/lask-task-runner/lask-module-tools.git --rev v0.8.0
 ```
 
 ```lask

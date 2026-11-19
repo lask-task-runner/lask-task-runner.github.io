@@ -210,7 +210,7 @@ When only file rules remain, keep them and call Make from the task that needs th
 | `-cmd` (ignore failure) | `$* cmd`, or `try` / `catch` |
 | `make -k` | `try` / `catch` around each step |
 | `@cmd` (don't echo) | — every command is logged to stderr; `run` prints nothing to stdout |
-| `export VAR` | `env: {"VAR": ...}` on the environment |
+| `export VAR` | `env: { "VAR": ... }` on the environment |
 | `include other.mk` | `import { task } from "./other.lask"` |
 | A hand-written `help` target | doc comments, shown by `lask run <task> --help` |
 | `.DEFAULT_GOAL` | — name the task: `lask run build` |

@@ -233,7 +233,7 @@ permissions:
   contents: read
 
 env:
-  LASK_VERSION: v0.7.0
+  LASK_VERSION: v0.18.0
 
 jobs:
   ci:
@@ -288,7 +288,7 @@ permissions:
   contents: read
 
 env:
-  LASK_VERSION: v0.7.0
+  LASK_VERSION: v0.18.0
 
 jobs:
   deploy:
@@ -482,7 +482,7 @@ The task is the same everywhere; only the wrapper changes. GitLab CI, for exampl
 ci:
   tags: [docker-host]
   variables:
-    LASK_VERSION: v0.7.0
+    LASK_VERSION: v0.18.0
   script:
     - curl -fsSL "https://github.com/lask-task-runner/lask/releases/download/${LASK_VERSION}/lask-${LASK_VERSION}-linux-amd64.tar.gz" | tar -xz -C /tmp lask
     - /tmp/lask sync --frozen

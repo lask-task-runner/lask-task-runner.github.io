@@ -35,6 +35,29 @@ const commitOf = (dir, ref) => {
 const branchCommit = (dir, name) =>
   commitOf(dir, `refs/remotes/origin/${name}`) ?? commitOf(dir, `refs/heads/${name}`);
 
+// lask 0.17 writes each environment of a function's help as
+// { environment: "#python:3.12", kind }, where earlier releases wrote
+// { target: "python:3.12" }, and "recipe ./lib/x/Dockerfile" for a recipe,
+// the form commands.json still uses. The modules.mjs of a frozen version
+// reads only target, so every dump gets it, whichever lask wrote it.
+function addHelpTargets(dir) {
+  const fnDir = path.join(dir, "functions");
+  if (!fs.existsSync(fnDir)) return;
+  for (const f of fs.readdirSync(fnDir)) {
+    const file = path.join(fnDir, f);
+    const h = JSON.parse(fs.readFileSync(file, "utf8"));
+    let changed = false;
+    for (const e of h.environments ?? []) {
+      if (e.target === undefined && typeof e.environment === "string") {
+        const head = e.environment.replace(/^#/, "");
+        e.target = head.startsWith(".") ? `recipe ${head}` : head;
+        changed = true;
+      }
+    }
+    if (changed) fs.writeFileSync(file, JSON.stringify(h) + "\n");
+  }
+}
+
 const semver = (v) => v.replace(/^v/, "").split(".").map(Number);
 const newer = (a, b) => {
   const [x, y] = [semver(a), semver(b)];
@@ -110,9 +133,11 @@ for (const v of resolved) {
   // The module reference, from the help lask gave for the module version
   // this Lask version documents (main.lask dumps it before this runs).
   if (v.tools && fs.existsSync(path.join(siteDir, "scripts/modules.mjs"))) {
+    const help = path.join(SITE, ".module-help", `tools-${v.tools}`);
+    addHelpTargets(help);
     execFileSync("node", ["scripts/modules.mjs"], {
       cwd: siteDir,
-      env: { ...env, MODULE_HELP: path.join(SITE, ".module-help", `tools-${v.tools}`) },
+      env: { ...env, MODULE_HELP: help },
       stdio: "inherit",
     });
   }
