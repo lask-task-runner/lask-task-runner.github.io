@@ -40,11 +40,11 @@ features:
 
 <div class="home-demo">
 
-<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: tasks that run anywhere and touch anything become functions, go into pinned containers that are the same on every machine, get types that turn the wrong input away, and get bounds that let the project's files and a registry through and stop an attacker; then the Lask logo: Functions. Containers. Types. Bounds.">
+<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: tasks that run anywhere and touch anything become functions, get types that turn the wrong input away, go into pinned containers that are the same on every machine, and get bounds that let the project's files and a registry through and stop an attacker; then the Lask logo: Functions. Types. Containers. Bounds.">
   <source src="/media/lask-tour.mp4" type="video/mp4">
 </video>
 
-Lask in under a minute: from tasks that run anywhere and touch anything, to functions in pinned containers, with types, and bounds on what they reach.
+Lask in under a minute: from tasks that run anywhere and touch anything, to typed functions in pinned containers, with bounds on what they reach.
 
 </div>
 
