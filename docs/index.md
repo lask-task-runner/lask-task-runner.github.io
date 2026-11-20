@@ -40,11 +40,11 @@ features:
 
 <div class="home-demo">
 
-<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in one minute: a task an agent added reaches files, secrets and the network until within bounds it; one main.lask whose commands run in images pinned by digest; lint and test side by side; the same digests on a laptop and in CI; a typo and a command on the host caught before anything runs">
+<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: a few lines of main.lask fold into a task; a ring stops everything it could reach except what you allow; every tool in a container, pinned by digest; the same container on a laptop, in the cloud and on a server; two tasks side by side; a mistake caught before anything runs; then the Lask logo: Pinned. Checked. Bounded.">
   <source src="/media/lask-tour.mp4" type="video/mp4">
 </video>
 
-Lask in one minute: bound what a task can reach, keep tasks in one typed file, run them in pinned images side by side, get the same images on every machine, and catch mistakes before anything runs.
+Lask in under a minute: only what you allow, every tool in a pinned container, the same everywhere, side by side, and checked before anything runs.
 
 </div>
 
