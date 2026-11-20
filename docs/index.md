@@ -40,7 +40,7 @@ features:
 
 <div class="home-demo">
 
-<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: tasks that run anywhere and touch anything become functions, get types that turn the wrong input away, go into pinned containers that are the same on every machine, and get bounds that let the project's files and a registry through and stop an attacker; then many functions combine into modules, with a pinned module from elsewhere, reaching the same places the tasks first touched, where the attacker, a secret and the Docker socket are refused, and gather into the Lask logo: Functions. Types. Containers. Bounds.">
+<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: tasks that run anywhere and touch anything become functions, get types that turn the wrong input away, go into pinned containers that are the same on every machine, and get bounds that let the project's files and a registry through and stop an attacker; then many functions combine into modules, with a pinned module from elsewhere, reaching the same places the tasks first touched, where the attacker, a secret and the Docker socket are refused, and gather into the Lask logo: Functions. Types. Containers. Bounds. lask make it simple.">
   <source src="/media/lask-tour.mp4" type="video/mp4">
 </video>
 
