@@ -40,7 +40,7 @@ features:
 
 <div class="home-demo">
 
-<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: a few lines of main.lask fold into a task; it reaches the project's files, a package registry and an attacker, and a ring lets only the first two through; every tool in a container, pinned by digest; the same container on a laptop, in the cloud and on a server; two tasks side by side; a mistake caught before anything runs; then the Lask logo: Pinned. Checked. Bounded.">
+<video controls playsinline preload="metadata" width="1280" height="720" poster="/media/lask-tour.jpg" aria-label="Lask in under a minute: tasks flow through a runner, and one comes forward; it reaches the project's files, a package registry and an attacker, and a ring lets only the first two through; a shipping container closes around it, every tool in a container, pinned by digest; the same container on a laptop, in the cloud and on a server; two tasks side by side; a mistake caught before anything runs; then the Lask logo: Pinned. Checked. Bounded.">
   <source src="/media/lask-tour.mp4" type="video/mp4">
 </video>
 
