@@ -4,7 +4,7 @@ This page defines the terms the rest of the documentation uses, one short sectio
 
 ## Project, module and task
 
-A **project** is a directory with a `main.lask` file. Every `lask` command reads `main.lask` in the current directory unless you pass `--module <path>`.
+A **project** is a directory with a `main.lask` file. Every `lask` command reads that `main.lask`: the one in the current directory, or in the nearest directory above it, so you can run a task from anywhere in the project, `app/` say. Paths in the project, the mount at `/work` and `lask.json` are relative to the directory of `main.lask`, not to where you run `lask`, so a task does the same thing wherever you start it. `--module <path>` names another module, and is not looked for above.
 
 A **module** is one `.lask` file. `main.lask` is the entry module, and it can import other modules by relative path:
 
