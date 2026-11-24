@@ -215,6 +215,14 @@ E-CLI-USAGE: too many positional arguments: expected 0, got 1
 
 `lask run --help` lists the tasks and `lask run <task> --help` shows a task's parameters. A keyword parameter declared without a default, such as `--target: String`, must be given. A `Bool` parameter is a flag: `--fix` on its own is `true`, and `--fix false` or `--fix=false` sets it to `false`. Options for `lask` itself, such as `--module`, go before the task name; everything after it belongs to the task.
 
+### "no main.lask in this directory or any directory above it"
+
+```text
+E-CLI-USAGE: no main.lask in this directory or any directory above it; a Lask project is a directory with a main.lask file, and --module names another entry module
+```
+
+`lask` looks for `main.lask` in the current directory, then in each directory above it. None of them has one, so you are outside any Lask project. Change into the project, create its `main.lask`, or pass `--module <path>` to name the module. A `--module` that names no file is `E-CLI-USAGE: no such module: <path>`.
+
 ### `lask` starts and nothing happens
 
 A task that uses `stdin` reads it to the end before it starts, so it can use what was piped in. If stdin is open and nothing writes to it, which happens when another program or a script starts `lask`, the task waits. Add `</dev/null` to the command. A task that never refers to `stdin` doesn't read it, so this doesn't happen to it.

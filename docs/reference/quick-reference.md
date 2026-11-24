@@ -70,7 +70,7 @@ $ lask run release --help
 | `lask completion <shell>` | Emit a completion script (bash, zsh, fish). |
 | `lask version` | Print the version. |
 
-Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask`), `--output text\|json\|pretty-json` for what goes to stdout (default `json` for the result of `eval`, `text` otherwise), `--log-format text\|json` for what goes to stderr, `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
+Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask` in the current directory or the nearest one above), `--output text\|json\|pretty-json` for what goes to stdout (default `json` for the result of `eval`, `text` otherwise), `--log-format text\|json` for what goes to stderr, `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
 
 A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run`, and `show_version` as `lask run show-version`. A `Bool` keyword parameter is a flag: on its own it is `true`, and it takes the next word as its value only when that is `true` or `false`.
 
