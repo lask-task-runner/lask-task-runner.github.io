@@ -141,6 +141,11 @@
           "match": "(?<![.\\w])access(?=\\s+[A-Z][A-Za-z0-9_]*\\s*=)"
         },
         {
+          "comment": "`class` and `instance` are keywords only where they begin a class or instance declaration: `class ord<T> {`, `instance ord<Version> {`, `instance<T: ord> ord<Array<T>> {` (spec 3.3, 4.6).",
+          "name": "keyword.other.lask",
+          "match": "(?<![.\\w])(?:class(?=\\s+[a-z_][A-Za-z0-9_]*\\s*<)|instance(?=\\s+(?:[a-z_][A-Za-z0-9_]*\\.)?[a-z_][A-Za-z0-9_]*\\s*<|<[^>]*(?:<[^>]*>[^>]*)*>\\s*(?:[a-z_][A-Za-z0-9_]*\\.)?[a-z_][A-Za-z0-9_]*\\s*<))"
+        },
+        {
           "name": "keyword.other.on.lask",
           "match": "(?<=\\})\\s*(on)\\b",
           "captures": { "1": { "name": "keyword.other.lask" } }
