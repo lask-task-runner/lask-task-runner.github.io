@@ -161,9 +161,9 @@ $ lask run ci
 [#python:3.13.7-alpine3.22:1] killed
 E-RUNTIME-COMMAND-NONZERO: the command exited with code 1 and wrote nothing to stderr; its output is in the command log
 stack trace (innermost first):
-  at lint (main.lask)
-  at <lambda@15:7> (main.lask)
-  at ci (main.lask)
+  at lint (main.lask:11:10)
+  at async (main.lask:15:13)
+  at ci (main.lask:17:3)
 $ echo $?
 1
 ```
@@ -241,10 +241,10 @@ Found 1 error.
 [*] 1 fixable with the `--fix` option.
 
 stack trace (innermost first):
-  at passed (main.lask)
-  at lint (main.lask)
-  at <lambda@30:7> (main.lask)
-  at ci (main.lask)
+  at passed (main.lask:10:5)
+  at lint (main.lask:25:3)
+  at async (main.lask:30:13)
+  at ci (main.lask:32:3)
 ```
 
 (The double space in `ruff check  app` is where the empty `fix_flag` went.)
@@ -281,7 +281,7 @@ Returns:
   String
 
 Environments:
-  docker  ghcr.io/astral-sh/ruff:0.13.3-alpine
+  #ghcr.io/astral-sh/ruff:0.13.3-alpine  registry
 
 Defined at main.lask:22
 ```

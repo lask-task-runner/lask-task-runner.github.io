@@ -77,7 +77,7 @@ A task that runs a command needs its image pinned first:
 $ lask run cowsay-hello Lask
 E-IO-IMAGE-MISSING: image 'rancher/cowsay' is not pinned in lask.lock.json; run 'lask sync'
 stack trace (innermost first):
-  at cowsay_hello (main.lask)
+  at cowsay_hello (main.lask:10:3)
 $ echo $?
 3
 ```
@@ -167,7 +167,7 @@ Returns:
   String
 
 Environments:
-  docker  rancher/cowsay
+  #rancher/cowsay  registry
 
 Defined at main.lask:8
 ```

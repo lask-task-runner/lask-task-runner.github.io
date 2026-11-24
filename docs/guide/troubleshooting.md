@@ -17,9 +17,11 @@ An error during a run gives the code and message, then the chain of calls that l
 ```text
 E-RUNTIME-COMMAND-NONZERO: ...
 stack trace (innermost first):
-  at lint (main.lask)
-  at ci (main.lask)
+  at lint (main.lask:11:10)
+  at ci (main.lask:17:3)
 ```
+
+Each line is a function, with the line and column in it where the failure was: in the innermost one, the expression that failed, and in the others, the call it came out of. A function you didn't name is shown by what made it: `async` for the work an `async` started, `lambda` for `\(x) -> ...`, and `try` or `finally` for those blocks.
 
 The code tells you what kind of problem it is:
 
@@ -102,7 +104,7 @@ The image is built only for `linux/amd64`, so Docker runs it under emulation. It
 ```text
 E-RUNTIME-COMMAND-NONZERO: the command exited with code 1 and wrote nothing to stderr; its output is in the command log
 stack trace (innermost first):
-  at lint (main.lask)
+  at lint (main.lask:11:10)
 ```
 
 When a `$` command exits with a non-zero code, the error message is the command's stderr. Many tools, linters especially, print their findings on stdout and nothing on stderr, so the error can only point you to the command log above it, where the output is. A program that catches the error with `try` sees an empty `message`. To put it in the error, run the command with `$*` and fail with your own message, as in [Your first real task file](./first-task-file#step-5-a-readable-failure).
