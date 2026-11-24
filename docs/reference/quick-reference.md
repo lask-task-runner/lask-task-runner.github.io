@@ -136,11 +136,36 @@ n = first_or([1, 2], 0)                          // instantiated at Number here
 
 largest<T: orderable>(xs: Array<T>): T = last(sort(xs))   // a named bound
 label<T: Number | String>(x: T): String = "#{x}"          // a type bound
+show<T: orderable + stringifiable>(xs: Array<T>): String = "#{first(sort(xs))}"   // joined
 ```
 
 Annotations are optional and inference fills the rest: a parameter with neither an annotation nor a default takes the type its uses in the body give it (`inc(x) = x + 1` takes a `Number`), and one used at no type is a type parameter (`identity(x) = x` is `identity<T>(x: T): T`). A mixed array literal is `Array<Any>`. A union is inferred only as the join of a type with `Null` (`c ? "x" : null` is `String | Null`), and an optional field never: each other one is something someone wrote.
 
-`?` qualifies the key and the field's type qualifies the value: `a: String | Null` must be present and may be null, `a?: String` may be absent. A type parameter is opaque inside its own declaration — it conforms only to itself and `Any` — so a body may pass such a value around but not compare, order or interpolate one, unless a bound says so. `comparable` gives `==`, `stringifiable` gives `#{...}`, and `orderable` gives `sort` and both of the others. A type bound `<T: B>` admits what conforms to `B` and gives what `B` has, though `Any` gives nothing. Built-ins are bounded the same way (`sort<T: orderable>`), and a use outside a bound is `E-TYPE-BOUND`. → [4.2](/reference/spec#42-type-syntax)
+`?` qualifies the key and the field's type qualifies the value: `a: String | Null` must be present and may be null, `a?: String` may be absent. A type parameter is opaque inside its own declaration — it conforms only to itself and `Any` — so a body may pass such a value around but not compare, order or interpolate one, unless a bound says so. `comparable` gives `==`, `stringifiable` gives `#{...}`, and `orderable` gives `sort`, `<` and `==` — not `#{...}`, which takes `<T: orderable + stringifiable>`: named bounds and classes join with `+`, and inference joins what a parameter's uses need. A type bound `<T: B>` admits what conforms to `B` and gives what `B` has, though `Any` gives nothing, and stands alone. Built-ins are bounded the same way (`sort<T: orderable>`), and a use outside a bound is `E-TYPE-BOUND`. → [4.2](/reference/spec#42-type-syntax)
+
+### Classes and instances
+
+→ [spec 4.6](/reference/spec#46-classes-and-instances)
+
+```lask
+class labelled<T> {                    // a bound you declare: method signatures,
+  label(x: T): String                  // and defaults an instance may leave out
+  labels(xs: Array<T>): String = join(map(xs, \(x) -> label(x)), " ")
+}
+instance labelled<Number> { label(x) = "##{x}" }
+
+type Version = Record<major: Number, minor: Number>
+instance orderable<Version> {          // orderable is a class: sort, sort_by,
+  compare(a, b) = a.major - b.major    // compare and < now order a Version
+}
+instance<T: orderable> orderable<Array<T>> {   // parametric: every Array<X>
+  compare(a, b) = compare(a[0], b[0])           // whose X is orderable
+}
+
+tag<T: labelled>(x: T): String = label(x)      // a class is used as a bound
+```
+
+An instance is for a type after aliases are expanded, so it belongs to the shape and not to the name. A program has one instance per class and type: a second, or one whose type overlaps another's, is `E-NAME-DUPLICATE`. Instances are declared in the class's module or in the project, never in a dependency, so `orderable` instances live in the project. `comparable` and `stringifiable` are closed, and `Number` and `String` are already `orderable`. The instance is chosen while the program is checked, from the types: the CLI picks it from the decoded arguments (a JSON object is a record type), and a generic function runs specialized at each type it is used at, `within` checked for each. A class bound goes on a top-level declaration, not on a local function. → [4.6](/reference/spec#46-classes-and-instances), [11.2](/reference/spec#112-function-invocation)
 
 Conformance is small on purpose. Everything conforms to `Any`, and a member to its union. Containers and records follow their contents: `Array<String>` conforms to `Array<String | Null>`, and a `Record` to one with the same required and optional fields whose types it conforms to. A function conforms to one whose parameters conform to its own and whose result its result conforms to. Getting *out* of `Any` or a union takes a runtime check — `cast(v)` (fails on anything else) or `case` type dispatch (tests instead of failing). → [4.4](/reference/spec#44-type-semantics)
 
