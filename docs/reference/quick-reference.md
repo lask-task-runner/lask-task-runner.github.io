@@ -72,7 +72,7 @@ $ lask run release --help
 
 Options come **before** the function name — everything after it belongs to the function. `--module <path>` (default `main.lask` in the current directory or the nearest one above), `--output text\|json\|pretty-json` for what goes to stdout (default `json` for the result of `eval`, `text` otherwise), `--log-format text\|json` for what goes to stderr, `--arg-decode text\|json\|auto` (default `auto`), `--trace-id`, `--no-color`, `--confirm`. → [11.2](/reference/spec#112-function-invocation)
 
-A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run`, and `show_version` as `lask run show-version`. A `Bool` keyword parameter is a flag: on its own it is `true`, and it takes the next word as its value only when that is `true` or `false`.
+A task's signature is its command line. `-` maps to `_`, so `release(--dry_run = false)` is reachable as `lask run release --dry-run`, and `show_version` as `lask run show-version`. A function in a namespace the module re-exports, `export * as db from "./lib/db.lask"`, is named by its path as words or joined by `.`: `lask run db migrate` and `lask run db.migrate` both call it, through any number of namespaces, and `lask run db --help` lists what `db` holds. A `Bool` keyword parameter is a flag: on its own it is `true`, and it takes the next word as its value only when that is `true` or `false`.
 
 A task can ask for a typed confirmation before it runs, declared in `lask.json` rather than in code. It is a guard against mistakes, not a security boundary. `lask check` rejects an entry that names no function, parameter or fitting value. → [ch. 5](/reference/spec#5-declarations-and-modules), [11.2](/reference/spec#112-function-invocation)
 
@@ -105,6 +105,7 @@ import { add, Config } from "./lib/math.lask"   // named, may rename with `as`
 import * as m from "./lib/util.lask"            // namespace: m.symbol, m.TypeName
 import { send } from "notify"                   // external dependency, by name
 export { rollout } from "./lib/deploy.lask"     // re-export, parameter list intact
+export * as db from "./lib/db.lask"             // namespace re-export: lask run db migrate
 ```
 
 External dependencies are declared in `lask.json` (`git` + `rev`, or `url`) and pinned by content hash in the committed `lask.lock.json`. `check`, `run`, `eval` and `envs` never touch the network; `lask sync` is what fetches and verifies. The import graph must be acyclic, and an import reaches only a dependency's root `main.lask`. → [11.5](/reference/spec#115-dependency-management-deps), [11.7](/reference/spec#117-synchronization-sync)
